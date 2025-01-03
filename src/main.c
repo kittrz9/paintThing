@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include <SDL3/SDL.h>
 
@@ -30,10 +31,19 @@ SDL_FRect displayRect = {
 SDL_Texture* canvasTexture;
 
 SDL_PixelFormat canvasFormat = SDL_PIXELFORMAT_ABGR32; // SDL probably tries to make little/big endian not matter here, but trying RGBA32 ends up with it reversed and this fixes that
+uint32_t* texturePixels;
 uint32_t* canvasPixels;
 int canvasPitch;
 
 bool running = true;
+
+void copyCanvas(uint32_t* canvasDst, uint32_t* canvasSrc) {
+	for(uint16_t y = 0; y < CANVAS_HEIGHT; ++y) {
+		memcpy(canvasDst, canvasSrc, canvasPitch);
+		canvasDst = (uint32_t*)((uint8_t*)canvasDst + canvasPitch);
+		canvasSrc = (uint32_t*)((uint8_t*)canvasSrc + canvasPitch);
+	}
+}
 
 int main(int argc, char** argv) {
 	if(SDL_Init(SDL_INIT_VIDEO) == 0) {
@@ -52,6 +62,11 @@ int main(int argc, char** argv) {
 
 	canvasTexture = SDL_CreateTexture(renderer, canvasFormat, SDL_TEXTUREACCESS_STREAMING, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+	SDL_LockTexture(canvasTexture, NULL, &texturePixels, &canvasPitch);
+	canvasPixels = malloc(sizeof(uint32_t) * canvasPitch * CANVAS_HEIGHT);
+	memset(canvasPixels, 255, sizeof(uint32_t) * canvasPitch * CANVAS_HEIGHT);
+	SDL_UnlockTexture(canvasTexture);
+
 	SDL_SetTextureScaleMode(canvasTexture, SDL_SCALEMODE_NEAREST);
 
 
@@ -68,31 +83,34 @@ int main(int argc, char** argv) {
 
 		float mousePosX;
 		float mousePosY;
-		SDL_MouseButtonFlags = SDL_GetMouseState(&mousePosX, &mousePosY);
+		SDL_MouseButtonFlags mouseButtons = SDL_GetMouseState(&mousePosX, &mousePosY);
 
 		SDL_SetRenderDrawColor(renderer, 125, 112, 104, 255);
 		SDL_RenderClear(renderer);
 
-		SDL_LockTexture(canvasTexture, NULL, &canvasPixels, &canvasPitch);
-		uint32_t* pixel = canvasPixels;
+		SDL_LockTexture(canvasTexture, NULL, &texturePixels, &canvasPitch);
+		copyCanvas(texturePixels, canvasPixels);
+		uint32_t* canvasPixel = canvasPixels;
+		uint32_t* texturePixel = texturePixels;
 		for(uint16_t y = 0; y < CANVAS_HEIGHT; ++y) {
 			for(uint16_t x = 0; x < CANVAS_WIDTH; ++x) {
-				/*if((x/4 + y/4) % 2 == 0) {
-					*pixel = 0x000000ff;
-				} else {
-					*pixel = 0xffffffff;
-				}*/
-				*pixel = 0xffffffff;
+				// jank to keep both pointers in sync
+				uint32_t offset = (uint32_t)canvasPixel - (uint32_t)canvasPixels;
+				texturePixel = (uint32_t*)((uint8_t*)texturePixels + offset);
 
-				// could maybe just draw the cursor on its own, but this gives an idea of how the image will look once the mouse is clicked
 				uint32_t x2 = x - ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
 				uint32_t y2 = y - ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
 				if(x2*x2 + y2*y2 < 100) {
-					*pixel = 0x0000ffff;
+					// draw brush preview
+					*texturePixel = 0x0000ffff;
+					if(mouseButtons & SDL_BUTTON_LMASK) {
+						// draw brush to the actual canvas
+						*canvasPixel = 0x0000ffff;
+					}
 				}
-				++pixel;
+				++canvasPixel;
 			}
-			pixel = (uint32_t*)((uint8_t*)canvasPixels + (canvasPitch * y)); // casts to uint8_t* and back to move forward in single bytes rather than 4 bytes at a time, casting it back avoids a compiler warning
+			canvasPixel = (uint32_t*)((uint8_t*)canvasPixels + (canvasPitch * y)); // casts to uint8_t* and back to move forward in single bytes rather than 4 bytes at a time, casting it back avoids a compiler warning
 		}
 		SDL_UnlockTexture(canvasTexture);
 
