@@ -54,27 +54,6 @@ int main(int argc, char** argv) {
 
 	SDL_SetTextureScaleMode(canvasTexture, SDL_SCALEMODE_NEAREST);
 
-	SDL_LockTexture(canvasTexture, NULL, &canvasPixels, &canvasPitch);
-	uint32_t* pixel = canvasPixels;
-	for(uint16_t y = 0; y < CANVAS_HEIGHT; ++y) {
-		for(uint16_t x = 0; x < CANVAS_WIDTH; ++x) {
-			/*if((x/4 + y/4) % 2 == 0) {
-				*pixel = 0x000000ff;
-			} else {
-				*pixel = 0xffffffff;
-			}*/
-			*pixel = 0xffffffff;
-
-			uint32_t x2 = x - CANVAS_WIDTH/2;
-			uint32_t y2 = y - CANVAS_HEIGHT/2;
-			if(x2*x2 + y2*y2 < 100) {
-				*pixel = 0x0000ffff;
-			}
-			++pixel;
-		}
-		pixel = (uint32_t*)((uint8_t*)canvasPixels + (canvasPitch * y)); // casts to uint8_t* and back to move forward in single bytes rather than 4 bytes at a time, casting it back avoids a compiler warning
-	}
-	SDL_UnlockTexture(canvasTexture);
 
 	SDL_Event e;
 	while(running) {
@@ -87,8 +66,35 @@ int main(int argc, char** argv) {
 			default: break;
 		}
 
+		float mousePosX;
+		float mousePosY;
+		SDL_MouseButtonFlags = SDL_GetMouseState(&mousePosX, &mousePosY);
+
 		SDL_SetRenderDrawColor(renderer, 125, 112, 104, 255);
 		SDL_RenderClear(renderer);
+
+		SDL_LockTexture(canvasTexture, NULL, &canvasPixels, &canvasPitch);
+		uint32_t* pixel = canvasPixels;
+		for(uint16_t y = 0; y < CANVAS_HEIGHT; ++y) {
+			for(uint16_t x = 0; x < CANVAS_WIDTH; ++x) {
+				/*if((x/4 + y/4) % 2 == 0) {
+					*pixel = 0x000000ff;
+				} else {
+					*pixel = 0xffffffff;
+				}*/
+				*pixel = 0xffffffff;
+
+				// could maybe just draw the cursor on its own, but this gives an idea of how the image will look once the mouse is clicked
+				uint32_t x2 = x - ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
+				uint32_t y2 = y - ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
+				if(x2*x2 + y2*y2 < 100) {
+					*pixel = 0x0000ffff;
+				}
+				++pixel;
+			}
+			pixel = (uint32_t*)((uint8_t*)canvasPixels + (canvasPitch * y)); // casts to uint8_t* and back to move forward in single bytes rather than 4 bytes at a time, casting it back avoids a compiler warning
+		}
+		SDL_UnlockTexture(canvasTexture);
 
 		SDL_RenderTexture(renderer, canvasTexture, NULL, &displayRect);
 
