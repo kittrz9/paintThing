@@ -35,6 +35,8 @@ uint32_t* texturePixels;
 uint32_t* canvasPixels;
 int canvasPitch;
 
+uint8_t brushSize = 1;
+
 bool running = true;
 
 void copyCanvas(uint32_t* canvasDst, uint32_t* canvasSrc) {
@@ -78,6 +80,12 @@ int main(int argc, char** argv) {
 				running = false;
 				break;
 
+			case SDL_EVENT_MOUSE_WHEEL:
+				if((e.wheel.y < 0 && brushSize > 1) || (e.wheel.y > 0 && brushSize < 255)) {
+					brushSize += e.wheel.y;
+				}
+				break;
+
 			default: break;
 		}
 
@@ -100,12 +108,15 @@ int main(int argc, char** argv) {
 
 				uint32_t x2 = x - ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
 				uint32_t y2 = y - ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
-				if(x2*x2 + y2*y2 < 100) {
+				if(x2*x2 + y2*y2 < brushSize*brushSize) {
 					// draw brush preview
 					*texturePixel = 0x0000ffff;
 					if(mouseButtons & SDL_BUTTON_LMASK) {
 						// draw brush to the actual canvas
 						*canvasPixel = 0x0000ffff;
+					}
+					if(mouseButtons & SDL_BUTTON_RMASK) {
+						*canvasPixel = 0xffffffff;
 					}
 				}
 				++canvasPixel;
