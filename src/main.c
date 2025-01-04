@@ -46,6 +46,13 @@ uint32_t palette[] = {
 	0x0000ffff,
 };
 
+float sliderR = 0.0f;
+float sliderG = 0.0f;
+float sliderB = 0.0f;
+
+uint8_t selectedColor = 0xff;
+float* selectedSlider;
+
 bool running = true;
 
 void copyCanvas(uint32_t* canvasDst, uint32_t* canvasSrc) {
@@ -70,6 +77,8 @@ int main(int argc, char** argv) {
 		printf("could not create renderer: %s\n", SDL_GetError());
 		return 1;
 	}
+
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
 	canvasTexture = SDL_CreateTexture(renderer, canvasFormat, SDL_TEXTUREACCESS_STREAMING, CANVAS_WIDTH, CANVAS_HEIGHT);
 
@@ -97,13 +106,22 @@ int main(int argc, char** argv) {
 
 			case SDL_EVENT_MOUSE_BUTTON_DOWN:
 				if(e.button.x < DISPLAY_X) {
-					if(e.button.button == SDL_BUTTON_LEFT) {
-						for(uint8_t i = 0; i < sizeof(palette)/sizeof(palette[0]); ++i) {
-							if(e.button.y > i*50 && e.button.y < (i+1) * 50) {
+					for(uint8_t i = 0; i < sizeof(palette)/sizeof(palette[0]); ++i) {
+						if(e.button.y > i*50 && e.button.y < (i+1) * 50) {
+							if(e.button.button == SDL_BUTTON_LEFT) {
 								brushColor = palette[i];
 								break;
 							}
+							if(e.button.button == SDL_BUTTON_RIGHT) {
+								selectedColor = i;
+								break;
+							}
 						}
+					}
+				} else {
+					if(e.button.button == SDL_BUTTON_RIGHT) {
+						selectedColor = 0xff;
+						break;
 					}
 				}
 				break;
@@ -120,30 +138,32 @@ int main(int argc, char** argv) {
 
 		SDL_LockTexture(canvasTexture, NULL, &texturePixels, &canvasPitch);
 		copyCanvas(texturePixels, canvasPixels);
-		uint32_t* canvasPixel = canvasPixels;
-		uint32_t* texturePixel = texturePixels;
-		for(uint16_t y = 0; y < CANVAS_HEIGHT; ++y) {
-			for(uint16_t x = 0; x < CANVAS_WIDTH; ++x) {
-				// jank to keep both pointers in sync
-				uint32_t offset = (uint32_t)canvasPixel - (uint32_t)canvasPixels;
-				texturePixel = (uint32_t*)((uint8_t*)texturePixels + offset);
+		if(selectedColor == 0xff) {
+			uint32_t* canvasPixel = canvasPixels;
+			uint32_t* texturePixel = texturePixels;
+			for(uint16_t y = 0; y < CANVAS_HEIGHT; ++y) {
+				for(uint16_t x = 0; x < CANVAS_WIDTH; ++x) {
+					// jank to keep both pointers in sync
+					uint32_t offset = (uint32_t)canvasPixel - (uint32_t)canvasPixels;
+					texturePixel = (uint32_t*)((uint8_t*)texturePixels + offset);
 
-				uint32_t x2 = x - ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
-				uint32_t y2 = y - ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
-				if(x2*x2 + y2*y2 < brushSize*brushSize) {
-					// draw brush preview
-					*texturePixel = brushColor;
-					if(mouseButtons & SDL_BUTTON_LMASK) {
-						// draw brush to the actual canvas
-						*canvasPixel = brushColor;
+					uint32_t x2 = x - ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
+					uint32_t y2 = y - ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
+					if(x2*x2 + y2*y2 < brushSize*brushSize) {
+						// draw brush preview
+						*texturePixel = brushColor;
+						if(mouseButtons & SDL_BUTTON_LMASK) {
+							// draw brush to the actual canvas
+							*canvasPixel = brushColor;
+						}
+						if(mouseButtons & SDL_BUTTON_RMASK) {
+							*canvasPixel = 0xffffffff;
+						}
 					}
-					if(mouseButtons & SDL_BUTTON_RMASK) {
-						*canvasPixel = 0xffffffff;
-					}
+					++canvasPixel;
 				}
-				++canvasPixel;
+				canvasPixel = (uint32_t*)((uint8_t*)canvasPixels + (canvasPitch * y)); // casts to uint8_t* and back to move forward in single bytes rather than 4 bytes at a time, casting it back avoids a compiler warning
 			}
-			canvasPixel = (uint32_t*)((uint8_t*)canvasPixels + (canvasPitch * y)); // casts to uint8_t* and back to move forward in single bytes rather than 4 bytes at a time, casting it back avoids a compiler warning
 		}
 		SDL_UnlockTexture(canvasTexture);
 
@@ -164,6 +184,45 @@ int main(int argc, char** argv) {
 		}
 
 		SDL_RenderTexture(renderer, canvasTexture, NULL, &displayRect);
+
+		if(selectedColor != 0xff) {
+			// really need to set up an actual ui manager thing
+			SDL_SetRenderDrawColor(renderer,0,0,0,0xc0);
+			SDL_RenderFillRect(renderer, &(SDL_FRect){200,50*selectedColor,300,400});
+
+			SDL_SetRenderDrawColor(renderer,255,255,255,255);
+			uint8_t r = (palette[selectedColor] >> 24) & 0xff;
+			uint8_t g = (palette[selectedColor] >> 16) & 0xff;
+			uint8_t b = (palette[selectedColor] >> 8) & 0xff;
+			sliderR = (r/255.0);
+			sliderG = (g/255.0);
+			sliderB = (b/255.0);
+			SDL_RenderFillRect(renderer, &(SDL_FRect){220,50*selectedColor + (r/255.0)*200, 20, 20});
+			SDL_RenderFillRect(renderer, &(SDL_FRect){260,50*selectedColor + (g/255.0)*200, 20, 20});
+			SDL_RenderFillRect(renderer, &(SDL_FRect){300,50*selectedColor + (b/255.0)*200, 20, 20});
+
+			if(mouseButtons & SDL_BUTTON_LEFT) {
+				if(mousePosX > 220 && mousePosX < 260) {
+					selectedSlider = &sliderR;
+				}
+				if(mousePosX > 260 && mousePosX < 300) {
+					selectedSlider = &sliderG;
+				}
+				if(mousePosX > 300 && mousePosX < 340) {
+					selectedSlider = &sliderB;
+				}
+				if(selectedSlider != NULL) {
+					*selectedSlider = (mousePosY - 50*selectedColor) / 400.0;
+				}
+			} else {
+				selectedSlider = NULL;
+			}
+
+			r = sliderR*255;
+			g = sliderG*255;
+			b = sliderB*255;
+			palette[selectedColor] = (r<<24) | (g<<16) | (b<<8) | 0xff;
+		}
 
 		SDL_RenderPresent(renderer);
 	}
