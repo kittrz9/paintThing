@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <sys/param.h> // MAX and MIN macros
 
 #include <SDL3/SDL.h>
 
@@ -201,14 +202,17 @@ int main(int argc, char** argv) {
 		if(selectedColor == 0xff) {
 			uint32_t* canvasPixel = canvasPixels;
 			uint32_t* texturePixel = texturePixels;
-			for(uint16_t y = 0; y < CANVAS_HEIGHT; ++y) {
-				for(uint16_t x = 0; x < CANVAS_WIDTH; ++x) {
+			int16_t brushX = ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
+			int16_t brushY = ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
+			for(uint16_t y = MAX(0, brushY-brushSize); y < MIN(CANVAS_HEIGHT, brushY+brushSize); ++y) {
+				for(uint16_t x = MAX(0, brushX-brushSize); x < MIN(CANVAS_WIDTH, brushX+brushSize); ++x) {
 					// jank to keep both pointers in sync
-					uint32_t offset = (uint32_t)canvasPixel - (uint32_t)canvasPixels;
+					uint32_t offset = (y*canvasPitch)+(x*sizeof(uint32_t));
 					texturePixel = (uint32_t*)((uint8_t*)texturePixels + offset);
+					canvasPixel = (uint32_t*)((uint8_t*)canvasPixels + offset);
 
-					uint32_t x2 = x - ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
-					uint32_t y2 = y - ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
+					uint32_t x2 = x - brushX;
+					uint32_t y2 = y - brushY;
 					if(x2*x2 + y2*y2 < brushSize*brushSize) {
 						// draw brush preview
 						*texturePixel = brushColor;
@@ -217,13 +221,10 @@ int main(int argc, char** argv) {
 							*canvasPixel = brushColor;
 						}
 					}
-					++canvasPixel;
 				}
-				canvasPixel = (uint32_t*)((uint8_t*)canvasPixels + (canvasPitch * y)); // casts to uint8_t* and back to move forward in single bytes rather than 4 bytes at a time, casting it back avoids a compiler warning
 			}
 		}
 		SDL_UnlockTexture(canvasTexture);
-
 
 		SDL_FRect colorDisplayRect = {
 			.x = 0,
@@ -243,7 +244,6 @@ int main(int argc, char** argv) {
 		SDL_RenderTexture(renderer, canvasTexture, NULL, &displayRect);
 
 		if(selectedColor != 0xff) {
-			// really need to set up an actual ui manager thing
 			SDL_SetRenderDrawColor(renderer,0,0,0,0xc0);
 			SDL_RenderFillRect(renderer, &(SDL_FRect){200,50*selectedColor,300,400});
 
