@@ -7,6 +7,7 @@
 #include <SDL3/SDL.h>
 
 #include "ui.h"
+#include "save.h"
 
 #define SCREEN_WIDTH 1600
 #define SCREEN_HEIGHT 900
@@ -62,6 +63,8 @@ bool running = true;
 uint32_t* canvasHistory[MAX_UNDO];
 uint8_t historyIndex = 0;
 
+bool saving = false;
+
 void copyCanvas(uint32_t* canvasDst, uint32_t* canvasSrc) {
 	for(uint16_t y = 0; y < CANVAS_HEIGHT; ++y) {
 		memcpy(canvasDst, canvasSrc, canvasPitch);
@@ -89,7 +92,7 @@ int main(int argc, char** argv) {
 
 	canvasTexture = SDL_CreateTexture(renderer, canvasFormat, SDL_TEXTUREACCESS_STREAMING, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-	SDL_LockTexture(canvasTexture, NULL, &texturePixels, &canvasPitch);
+	SDL_LockTexture(canvasTexture, NULL, (void**)&texturePixels, &canvasPitch);
 	canvasPixels = malloc(canvasPitch * CANVAS_HEIGHT);
 	memset(canvasPixels, 255, canvasPitch * CANVAS_HEIGHT);
 
@@ -180,6 +183,20 @@ int main(int argc, char** argv) {
 							printf("<- %i\n", historyIndex);
 							copyCanvas(canvasPixels, canvasHistory[historyIndex]);
 							break;
+
+						case SDLK_S:
+							// would prefer to have the file saving stuff part of the actual ui eventually
+							// would need to implement text drawing and input stuff though
+							saveDialogUserdata userdata = {
+								.savedCanvasPixels = canvasPixels,
+								.savedCanvasW = CANVAS_WIDTH,
+								.savedCanvasH = CANVAS_HEIGHT,
+								.savedCanvasPitch = canvasPitch,
+								.savingFlag = &saving,
+							};
+							saving = true;
+							SDL_ShowSaveFileDialog(saveCanvasCallback, (void*)&userdata, window, NULL, 0, NULL);
+							break;
 						default: break;
 					}
 				}
@@ -197,28 +214,30 @@ int main(int argc, char** argv) {
 		SDL_SetRenderDrawColor(renderer, 125, 112, 104, 255);
 		SDL_RenderClear(renderer);
 
-		SDL_LockTexture(canvasTexture, NULL, &texturePixels, &canvasPitch);
+		SDL_LockTexture(canvasTexture, NULL, (void**)&texturePixels, &canvasPitch);
 		copyCanvas(texturePixels, canvasPixels);
-		if(selectedColor == 0xff) {
-			uint32_t* canvasPixel = canvasPixels;
-			uint32_t* texturePixel = texturePixels;
-			int16_t brushX = ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
-			int16_t brushY = ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
-			for(uint16_t y = MAX(0, brushY-brushSize); y < MIN(CANVAS_HEIGHT, brushY+brushSize); ++y) {
-				for(uint16_t x = MAX(0, brushX-brushSize); x < MIN(CANVAS_WIDTH, brushX+brushSize); ++x) {
-					// jank to keep both pointers in sync
-					uint32_t offset = (y*canvasPitch)+(x*sizeof(uint32_t));
-					texturePixel = (uint32_t*)((uint8_t*)texturePixels + offset);
-					canvasPixel = (uint32_t*)((uint8_t*)canvasPixels + offset);
+		if(!saving) {
+			if(selectedColor == 0xff) {
+				uint32_t* canvasPixel = canvasPixels;
+				uint32_t* texturePixel = texturePixels;
+				int16_t brushX = ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
+				int16_t brushY = ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
+				for(uint16_t y = MAX(0, brushY-brushSize); y < MIN(CANVAS_HEIGHT, brushY+brushSize); ++y) {
+					for(uint16_t x = MAX(0, brushX-brushSize); x < MIN(CANVAS_WIDTH, brushX+brushSize); ++x) {
+						// jank to keep both pointers in sync
+						uint32_t offset = (y*canvasPitch)+(x*sizeof(uint32_t));
+						texturePixel = (uint32_t*)((uint8_t*)texturePixels + offset);
+						canvasPixel = (uint32_t*)((uint8_t*)canvasPixels + offset);
 
-					uint32_t x2 = x - brushX;
-					uint32_t y2 = y - brushY;
-					if(x2*x2 + y2*y2 < brushSize*brushSize) {
-						// draw brush preview
-						*texturePixel = brushColor;
-						if(mouseButtons & SDL_BUTTON_LMASK) {
-							// draw brush to the actual canvas
-							*canvasPixel = brushColor;
+						uint32_t x2 = x - brushX;
+						uint32_t y2 = y - brushY;
+						if(x2*x2 + y2*y2 < brushSize*brushSize) {
+							// draw brush preview
+							*texturePixel = brushColor;
+							if(mouseButtons & SDL_BUTTON_LMASK) {
+								// draw brush to the actual canvas
+								*canvasPixel = brushColor;
+							}
 						}
 					}
 				}
@@ -256,6 +275,11 @@ int main(int argc, char** argv) {
 		}
 
 		drawSliders(renderer);
+
+		if(saving) {
+			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xc0);
+			SDL_RenderFillRect(renderer, NULL);
+		}
 
 		SDL_RenderPresent(renderer);
 	}

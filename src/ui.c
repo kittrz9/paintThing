@@ -69,6 +69,7 @@ uiSlider* createSlider(float x, float y, float size) {
 		}
 	}
 	printf("could not allocate slider!\n");
+	return NULL;
 }
 
 void destroySlider(uiSlider* slider) {
