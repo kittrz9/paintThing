@@ -55,6 +55,10 @@ float* selectedSlider;
 
 bool running = true;
 
+#define MAX_UNDO 5
+uint32_t* canvasHistory[MAX_UNDO];
+uint8_t historyIndex = 0;
+
 void copyCanvas(uint32_t* canvasDst, uint32_t* canvasSrc) {
 	for(uint16_t y = 0; y < CANVAS_HEIGHT; ++y) {
 		memcpy(canvasDst, canvasSrc, canvasPitch);
@@ -85,6 +89,11 @@ int main(int argc, char** argv) {
 	SDL_LockTexture(canvasTexture, NULL, &texturePixels, &canvasPitch);
 	canvasPixels = malloc(sizeof(uint32_t) * canvasPitch * CANVAS_HEIGHT);
 	memset(canvasPixels, 255, sizeof(uint32_t) * canvasPitch * CANVAS_HEIGHT);
+
+	for(uint8_t i = 0; i < MAX_UNDO; ++i) {
+		canvasHistory[i] = malloc(sizeof(uint32_t) * canvasPitch * CANVAS_HEIGHT);
+		memset(canvasHistory[i], 255, sizeof(uint32_t) * canvasPitch * CANVAS_HEIGHT);
+	}
 	SDL_UnlockTexture(canvasTexture);
 
 	SDL_SetTextureScaleMode(canvasTexture, SDL_SCALEMODE_NEAREST);
@@ -126,6 +135,38 @@ int main(int argc, char** argv) {
 				}
 				break;
 
+			case SDL_EVENT_MOUSE_BUTTON_UP:
+				// if the left mouse button stops being held in the color picker area it wont add whatever brush stroke that was into the history, not really a big deal since most brush strokes will end up stopping in the canvas but maybe I should fix this anyways
+				if(e.button.x > DISPLAY_X) {
+					if(historyIndex < MAX_UNDO-1) {
+						++historyIndex;
+					} else {
+						printf("shifting undo history!\n");
+						for(uint8_t i = 0; i < historyIndex; ++i) {
+							printf("! %i -> %i\n", i+1, i);
+							copyCanvas(canvasHistory[i], canvasHistory[i+1]);
+						}
+					}
+					printf("! (canvas) -> %i\n", historyIndex);
+					copyCanvas(canvasHistory[historyIndex], canvasPixels);
+				}
+				break;
+
+			case SDL_EVENT_KEY_DOWN:
+				if(e.key.mod & SDL_KMOD_LCTRL) {
+					switch(e.key.key) {
+						case SDLK_Z:
+							if(historyIndex > 0) {
+								--historyIndex;
+							}
+							printf("<- %i\n", historyIndex);
+							copyCanvas(canvasPixels, canvasHistory[historyIndex]);
+							break;
+						default: break;
+					}
+				}
+				break;
+
 			default: break;
 		}
 
@@ -155,9 +196,6 @@ int main(int argc, char** argv) {
 						if(mouseButtons & SDL_BUTTON_LMASK) {
 							// draw brush to the actual canvas
 							*canvasPixel = brushColor;
-						}
-						if(mouseButtons & SDL_BUTTON_RMASK) {
-							*canvasPixel = 0xffffffff;
 						}
 					}
 					++canvasPixel;
