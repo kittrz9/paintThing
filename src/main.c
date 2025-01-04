@@ -5,6 +5,8 @@
 
 #include <SDL3/SDL.h>
 
+#include "ui.h"
+
 #define SCREEN_WIDTH 1600
 #define SCREEN_HEIGHT 900
 SDL_Window* window;
@@ -40,22 +42,22 @@ uint32_t brushColor = 0x0000ffff;
 
 uint32_t palette[] = {
 	0x000000ff,
+	0x777777ff,
 	0xffffffff,
 	0xff0000ff,
 	0x00ff00ff,
 	0x0000ffff,
 };
 
-float sliderR = 0.0f;
-float sliderG = 0.0f;
-float sliderB = 0.0f;
+uiSlider* sliderR;
+uiSlider* sliderG;
+uiSlider* sliderB;
 
 uint8_t selectedColor = 0xff;
-float* selectedSlider;
 
 bool running = true;
 
-#define MAX_UNDO 5
+#define MAX_UNDO 32
 uint32_t* canvasHistory[MAX_UNDO];
 uint8_t historyIndex = 0;
 
@@ -87,12 +89,12 @@ int main(int argc, char** argv) {
 	canvasTexture = SDL_CreateTexture(renderer, canvasFormat, SDL_TEXTUREACCESS_STREAMING, CANVAS_WIDTH, CANVAS_HEIGHT);
 
 	SDL_LockTexture(canvasTexture, NULL, &texturePixels, &canvasPitch);
-	canvasPixels = malloc(sizeof(uint32_t) * canvasPitch * CANVAS_HEIGHT);
-	memset(canvasPixels, 255, sizeof(uint32_t) * canvasPitch * CANVAS_HEIGHT);
+	canvasPixels = malloc(canvasPitch * CANVAS_HEIGHT);
+	memset(canvasPixels, 255, canvasPitch * CANVAS_HEIGHT);
 
 	for(uint8_t i = 0; i < MAX_UNDO; ++i) {
-		canvasHistory[i] = malloc(sizeof(uint32_t) * canvasPitch * CANVAS_HEIGHT);
-		memset(canvasHistory[i], 255, sizeof(uint32_t) * canvasPitch * CANVAS_HEIGHT);
+		canvasHistory[i] = malloc(canvasPitch * CANVAS_HEIGHT);
+		memset(canvasHistory[i], 255,canvasPitch * CANVAS_HEIGHT);
 	}
 	SDL_UnlockTexture(canvasTexture);
 
@@ -122,7 +124,19 @@ int main(int argc, char** argv) {
 								break;
 							}
 							if(e.button.button == SDL_BUTTON_RIGHT) {
+								if(sliderR != NULL) { destroySlider(sliderR); }
+								if(sliderG != NULL) { destroySlider(sliderG); }
+								if(sliderB != NULL) { destroySlider(sliderB); }
 								selectedColor = i;
+								uint8_t r = (palette[selectedColor] >> 24) & 0xff;
+								uint8_t g = (palette[selectedColor] >> 16) & 0xff;
+								uint8_t b = (palette[selectedColor] >> 8) & 0xff;
+								sliderR = createSlider(220, selectedColor*50 + 25, 300);
+								sliderG = createSlider(260, selectedColor*50 + 25, 300);
+								sliderB = createSlider(300, selectedColor*50 + 25, 300);
+								sliderR->value = (r/255.0);
+								sliderG->value = (g/255.0);
+								sliderB->value = (b/255.0);
 								break;
 							}
 						}
@@ -130,6 +144,9 @@ int main(int argc, char** argv) {
 				} else {
 					if(e.button.button == SDL_BUTTON_RIGHT) {
 						selectedColor = 0xff;
+						destroySlider(sliderR);
+						destroySlider(sliderG);
+						destroySlider(sliderB);
 						break;
 					}
 				}
@@ -137,7 +154,7 @@ int main(int argc, char** argv) {
 
 			case SDL_EVENT_MOUSE_BUTTON_UP:
 				// if the left mouse button stops being held in the color picker area it wont add whatever brush stroke that was into the history, not really a big deal since most brush strokes will end up stopping in the canvas but maybe I should fix this anyways
-				if(e.button.x > DISPLAY_X) {
+				if(selectedColor == 0xff && e.button.button == SDL_BUTTON_LEFT && e.button.x > DISPLAY_X) {
 					if(historyIndex < MAX_UNDO-1) {
 						++historyIndex;
 					} else {
@@ -173,6 +190,8 @@ int main(int argc, char** argv) {
 		float mousePosX;
 		float mousePosY;
 		SDL_MouseButtonFlags mouseButtons = SDL_GetMouseState(&mousePosX, &mousePosY);
+
+		updateSliders(mousePosX, mousePosY, mouseButtons);
 
 		SDL_SetRenderDrawColor(renderer, 125, 112, 104, 255);
 		SDL_RenderClear(renderer);
@@ -229,40 +248,22 @@ int main(int argc, char** argv) {
 			SDL_RenderFillRect(renderer, &(SDL_FRect){200,50*selectedColor,300,400});
 
 			SDL_SetRenderDrawColor(renderer,255,255,255,255);
-			uint8_t r = (palette[selectedColor] >> 24) & 0xff;
-			uint8_t g = (palette[selectedColor] >> 16) & 0xff;
-			uint8_t b = (palette[selectedColor] >> 8) & 0xff;
-			sliderR = (r/255.0);
-			sliderG = (g/255.0);
-			sliderB = (b/255.0);
-			SDL_RenderFillRect(renderer, &(SDL_FRect){220,50*selectedColor + (r/255.0)*200, 20, 20});
-			SDL_RenderFillRect(renderer, &(SDL_FRect){260,50*selectedColor + (g/255.0)*200, 20, 20});
-			SDL_RenderFillRect(renderer, &(SDL_FRect){300,50*selectedColor + (b/255.0)*200, 20, 20});
 
-			if(mouseButtons & SDL_BUTTON_LEFT) {
-				if(mousePosX > 220 && mousePosX < 260) {
-					selectedSlider = &sliderR;
-				}
-				if(mousePosX > 260 && mousePosX < 300) {
-					selectedSlider = &sliderG;
-				}
-				if(mousePosX > 300 && mousePosX < 340) {
-					selectedSlider = &sliderB;
-				}
-				if(selectedSlider != NULL) {
-					*selectedSlider = (mousePosY - 50*selectedColor) / 400.0;
-				}
-			} else {
-				selectedSlider = NULL;
-			}
-
-			r = sliderR*255;
-			g = sliderG*255;
-			b = sliderB*255;
+			uint8_t r = sliderR->value*255;
+			uint8_t g = sliderG->value*255;
+			uint8_t b = sliderB->value*255;
 			palette[selectedColor] = (r<<24) | (g<<16) | (b<<8) | 0xff;
 		}
 
+		drawSliders(renderer);
+
 		SDL_RenderPresent(renderer);
+	}
+
+
+	free(canvasPixels);
+	for(uint8_t i = 0; i < MAX_UNDO-1; ++i) {
+		free(canvasHistory[i]);
 	}
 
 	return 0;
