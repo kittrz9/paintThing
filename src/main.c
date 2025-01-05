@@ -195,7 +195,7 @@ int main(int argc, char** argv) {
 								.savingFlag = &saving,
 							};
 							saving = true;
-							SDL_ShowSaveFileDialog(saveCanvasCallback, (void*)&userdata, window, NULL, 0, NULL);
+							SDL_ShowSaveFileDialog(saveCanvasCallback, (void*)&userdata, window, saveDialogFilters, sizeof(saveDialogFilters)/sizeof(saveDialogFilters[0]), NULL);
 							break;
 						default: break;
 					}

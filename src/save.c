@@ -13,17 +13,12 @@ bool endsWith(char* str1, char* str2) {
 void SDLCALL saveCanvasCallback(void* userdata, const char* const* fileList, int filter) {
 	if(fileList == NULL || fileList[0] == NULL) { 
 		*((saveDialogUserdata*)userdata)->savingFlag = false; // was set to true in main.c
+		return;
 	}
 
 	saveDialogUserdata canvasData = *(saveDialogUserdata*)userdata;
 
 	printf("%s\n", fileList[0]);
-
-	if(!endsWith(fileList[0], ".png")) {
-		printf("image formats other than png are not currently supported\n");
-		*((saveDialogUserdata*)userdata)->savingFlag = false; // was set to true in main.c
-		return;
-	}
 
 	// remove the pitch used in SDL's textures so it can be saved by stb_image_write
 	uint32_t* rawPixels = malloc(sizeof(uint32_t) * canvasData.savedCanvasW * canvasData.savedCanvasH);
@@ -42,7 +37,16 @@ void SDLCALL saveCanvasCallback(void* userdata, const char* const* fileList, int
 		rawPixels[i] = ((rawPixels[i] >> 24)&0xff) | ((rawPixels[i] >> 8)&0xff00) | ((rawPixels[i] << 8)&0xff0000) | ((rawPixels[i] << 24)&0xff000000);
 	}
 
-	stbi_write_png(fileList[0], canvasData.savedCanvasW, canvasData.savedCanvasH, 4, rawPixels, 0);
+	if(endsWith(fileList[0], ".png")) {
+		stbi_write_png(fileList[0], canvasData.savedCanvasW, canvasData.savedCanvasH, 4, rawPixels, 0);
+	} else if(endsWith(fileList[0], ".bmp")) {
+		stbi_write_bmp(fileList[0], canvasData.savedCanvasW, canvasData.savedCanvasH, 4, rawPixels);
+	} else if(endsWith(fileList[0], ".jpg")) {
+		stbi_write_jpg(fileList[0], canvasData.savedCanvasW, canvasData.savedCanvasH, 4, rawPixels, 100);
+	} else {
+		//printf("the format of \"%s\" is not currently supported\n", fileList[0]);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "format error", "invalid format", NULL);
+	}
 
 
 	*((saveDialogUserdata*)userdata)->savingFlag = false; // was set to true in main.c

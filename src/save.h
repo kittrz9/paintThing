@@ -14,6 +14,12 @@ typedef struct {
 	bool* savingFlag;
 } saveDialogUserdata;
 
+static const SDL_DialogFileFilter saveDialogFilters[] = {
+	{ "PNG", "png" },
+	{ "BMP", "bmp" },
+	{ "JPG", "jpg" },
+};
+
 void SDLCALL saveCanvasCallback(void* userdata, const char* const* fileList, int filter);
 
 #endif // SAVE_H
