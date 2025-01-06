@@ -6,7 +6,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-bool endsWith(char* str1, char* str2) {
+bool endsWith(const char* str1, char* str2) {
 	return (strcmp(str1+strlen(str1)-strlen(str2), str2) == 0);
 }
 

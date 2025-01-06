@@ -3,6 +3,9 @@
 
 #include <SDL3/SDL.h>
 
+#define SCREEN_WIDTH 1600
+#define SCREEN_HEIGHT 900
+
 enum uiSliderOrientation {
 	UI_SLIDER_HORIZONTAL,
 	UI_SLIDER_VERTICAL,
