@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 // will probably implement actual buttons and stuff later on
 #define MAX_SLIDERS 32
@@ -80,4 +81,48 @@ void destroySlider(uiSlider* slider) {
 		}
 	}
 	printf("could not destroy slider!\n");
+}
+
+
+SDL_Texture* fontTexture;
+// font stored in ascii order starting with !
+// probably should just include the font directly in the code to avoid finding and loading a file that could be moved or deleted
+void loadFont(SDL_Renderer* renderer, char* fontPath) {
+	SDL_Surface* fontSurface = SDL_LoadBMP(fontPath);
+
+	if(fontSurface == NULL) {
+		printf("could not load font file \"%s\", %s\n", fontPath, SDL_GetError());
+		exit(1);
+	}
+
+	fontTexture = SDL_CreateTextureFromSurface(renderer, fontSurface);
+	SDL_SetTextureScaleMode(fontTexture, SDL_SCALEMODE_NEAREST);
+
+	SDL_DestroySurface(fontSurface);
+}
+
+void drawText(SDL_Renderer* renderer, char* str, float x, float y, float scale) {
+	SDL_FRect charRect = {
+		.x = 0,
+		.y = 0,
+		.w = 8,
+		.h = 16,
+	};
+	SDL_FRect screenRect = {
+		.x = x,
+		.y = y,
+		.w = 8*scale,
+		.h = 16*scale,
+	};
+	for(uint32_t i = 0; i < strlen(str); ++i) {
+		charRect.x = 8*(str[i]-'!');
+		SDL_RenderTexture(renderer, fontTexture, &charRect, &screenRect);
+		screenRect.x += 8*scale;
+	}
+}
+
+// this maybe doesn't matter if all the memory used by SDL gets freed once the program exits
+// but idk maybe stuff sent to the gpu doesn't get freed and this causes a tiny memory leak
+void unloadFont(void) {
+	SDL_DestroyTexture(fontTexture);
 }

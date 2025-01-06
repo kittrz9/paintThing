@@ -25,4 +25,10 @@ void updateSliders(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseB
 uiSlider* createSlider(float x, float y, float size);
 void destroySlider(uiSlider* slider);
 
+
+
+void loadFont(SDL_Renderer* renderer, char* fontPath);
+void drawText(SDL_Renderer* renderer, char* str, float x, float y, float scale);
+void unloadFont(void);
+
 #endif // UI_H

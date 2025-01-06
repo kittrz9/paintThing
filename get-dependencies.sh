@@ -31,5 +31,5 @@ fi
 cp "$SDL3_DIR/build/libSDL3.so" "$SDL3_DIR/build/libSDL3.so.0" build/
 
 export INCLUDES="$INCLUDES -I$SDL3_DIR/include"
-export LIBS="-Wl,-rpath=./ -Wl,-rpath=build/ -L./build/ -lSDL3"
+export LIBS="$LIBS -Wl,-rpath=./ -Wl,-rpath=build/ -L./build/ -lSDL3"
 

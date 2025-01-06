@@ -104,6 +104,7 @@ int main(int argc, char** argv) {
 
 	SDL_SetTextureScaleMode(canvasTexture, SDL_SCALEMODE_NEAREST);
 
+	loadFont(renderer, "font.bmp");
 
 	SDL_Event e;
 	while(running) {
@@ -281,6 +282,8 @@ int main(int argc, char** argv) {
 			SDL_RenderFillRect(renderer, NULL);
 		}
 
+		drawText(renderer, "test string", 0,SCREEN_HEIGHT-32,2.0);
+
 		SDL_RenderPresent(renderer);
 	}
 
@@ -289,6 +292,10 @@ int main(int argc, char** argv) {
 	for(uint8_t i = 0; i < MAX_UNDO-1; ++i) {
 		free(canvasHistory[i]);
 	}
+	unloadFont();
+
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
 
 	return 0;
 }
