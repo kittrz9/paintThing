@@ -19,7 +19,7 @@ fi
 
 if ! [ -f "$SDL3_DIR/build/libSDL3.so.0" ]; then
 	cd "$ORIGIN_DIR/$SDL3_DIR" || exit 1
-	cmake -S . -B build
+	cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSDL_AUDIO=OFF -DSDL_HAPTIC=OFF -DSDL_JOYSTICK=OFF -DSDL_GPU=OFF -DSDL_POWER=OFF -DSDL_CAMERA=OFF -DSDL_SENSOR=OFF -DSDL_HIDAPI=OFF
 	cmake --build build -j "$(nproc)"
 	cd "$ORIGIN_DIR" || exit 1
 fi
