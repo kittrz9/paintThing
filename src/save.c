@@ -21,28 +21,28 @@ void SDLCALL saveCanvasCallback(void* userdata, const char* const* fileList, int
 	printf("%s\n", fileList[0]);
 
 	// remove the pitch used in SDL's textures so it can be saved by stb_image_write
-	uint32_t* rawPixels = malloc(sizeof(uint32_t) * canvasData.savedCanvasW * canvasData.savedCanvasH);
+	uint32_t* rawPixels = malloc(sizeof(uint32_t) * canvasData.canvas->w * canvasData.canvas->h);
 
 
 	uint32_t* p1 = rawPixels;
-	uint32_t* p2 = canvasData.savedCanvasPixels;
-	for(uint16_t y = 0; y < canvasData.savedCanvasH; ++y) {
-		memcpy(p1, p2, sizeof(uint32_t) * canvasData.savedCanvasW);
-		p1 += canvasData.savedCanvasW;
-		p2 = (uint32_t*)((uint8_t*)p2 + canvasData.savedCanvasPitch);
+	uint32_t* p2 = canvasData.canvas->pixels;
+	for(uint16_t y = 0; y < canvasData.canvas->h; ++y) {
+		memcpy(p1, p2, sizeof(uint32_t) * canvasData.canvas->w);
+		p1 += canvasData.canvas->w;
+		p2 = (uint32_t*)((uint8_t*)p2 + canvasData.canvas->pitch);
 	}
 
 	// endianness coming back to haunt me once again
-	for(uint32_t i = 0; i < canvasData.savedCanvasW * canvasData.savedCanvasH; ++i) {
+	for(uint32_t i = 0; i < canvasData.canvas->w * canvasData.canvas->h; ++i) {
 		rawPixels[i] = ((rawPixels[i] >> 24)&0xff) | ((rawPixels[i] >> 8)&0xff00) | ((rawPixels[i] << 8)&0xff0000) | ((rawPixels[i] << 24)&0xff000000);
 	}
 
 	if(endsWith(fileList[0], ".png")) {
-		stbi_write_png(fileList[0], canvasData.savedCanvasW, canvasData.savedCanvasH, 4, rawPixels, 0);
+		stbi_write_png(fileList[0], canvasData.canvas->w, canvasData.canvas->h, 4, rawPixels, 0);
 	} else if(endsWith(fileList[0], ".bmp")) {
-		stbi_write_bmp(fileList[0], canvasData.savedCanvasW, canvasData.savedCanvasH, 4, rawPixels);
+		stbi_write_bmp(fileList[0], canvasData.canvas->w, canvasData.canvas->h, 4, rawPixels);
 	} else if(endsWith(fileList[0], ".jpg")) {
-		stbi_write_jpg(fileList[0], canvasData.savedCanvasW, canvasData.savedCanvasH, 4, rawPixels, 100);
+		stbi_write_jpg(fileList[0], canvasData.canvas->w, canvasData.canvas->h, 4, rawPixels, 100);
 	} else {
 		//printf("the format of \"%s\" is not currently supported\n", fileList[0]);
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "format error", "invalid format", NULL);

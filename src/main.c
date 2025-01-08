@@ -3,6 +3,7 @@
 
 #include "ui.h"
 #include "modes.h"
+#include "canvas.h"
 
 // should get the framerate of the current monitor, just hard coded to my monitor's refresh rate for now
 #define FRAMERATE 144
@@ -27,10 +28,11 @@ int main(int argc, char** argv) {
 
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
+	initCanvas(renderer);
 
 	loadFont(renderer, "font.bmp");
 
-	modeSwitch(&canvasMode, renderer);
+	modeSwitch(&paintMode, renderer);
 
 
 	uint64_t start;
@@ -60,6 +62,8 @@ int main(int argc, char** argv) {
 	}
 
 	modeSwitch(NULL, NULL);
+
+	unloadFont();
 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);

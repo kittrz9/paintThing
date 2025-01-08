@@ -1,4 +1,4 @@
-#include "canvasMode.h"
+#include "paintMode.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,9 +6,7 @@
 
 #include "ui.h"
 #include "save.h"
-
-#define CANVAS_WIDTH 640
-#define CANVAS_HEIGHT 480
+#include "canvas.h"
 
 #define DISPLAY_WIDTH (SCREEN_WIDTH * (3.0/4.0))
 #define DISPLAY_HEIGHT (SCREEN_HEIGHT + 4.0)
@@ -23,13 +21,6 @@ SDL_FRect displayRect = {
 	.w = DISPLAY_WIDTH,
 	.h = DISPLAY_HEIGHT,
 };
-
-SDL_Texture* canvasTexture;
-
-SDL_PixelFormat canvasFormat = SDL_PIXELFORMAT_ABGR32; // SDL probably tries to make little/big endian not matter here, but trying RGBA32 ends up with it reversed and this fixes that
-uint32_t* texturePixels;
-uint32_t* canvasPixels;
-int canvasPitch;
 
 uint8_t brushSize = 1;
 uint32_t brushColor = 0x0000ffff;
@@ -49,45 +40,17 @@ uiSlider* sliderB;
 
 uint8_t selectedColor = 0xff;
 
-#define MAX_UNDO 32
-uint32_t* canvasHistory[MAX_UNDO];
-uint8_t historyIndex = 0;
-
 bool saving = false;
 
-void copyCanvas(uint32_t* canvasDst, uint32_t* canvasSrc) {
-	for(uint16_t y = 0; y < CANVAS_HEIGHT; ++y) {
-		memcpy(canvasDst, canvasSrc, canvasPitch);
-		canvasDst = (uint32_t*)((uint8_t*)canvasDst + canvasPitch);
-		canvasSrc = (uint32_t*)((uint8_t*)canvasSrc + canvasPitch);
-	}
+void paintModeInit(SDL_Renderer* renderer) {
+	// currently empty, would probably create any ui elements here
 }
 
-void canvasModeInit(SDL_Renderer* renderer) {
-	canvasTexture = SDL_CreateTexture(renderer, canvasFormat, SDL_TEXTUREACCESS_STREAMING, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-	SDL_LockTexture(canvasTexture, NULL, (void**)&texturePixels, &canvasPitch);
-	canvasPixels = malloc(canvasPitch * CANVAS_HEIGHT);
-	memset(canvasPixels, 255, canvasPitch * CANVAS_HEIGHT);
-
-	for(uint8_t i = 0; i < MAX_UNDO; ++i) {
-		canvasHistory[i] = malloc(canvasPitch * CANVAS_HEIGHT);
-		memset(canvasHistory[i], 255,canvasPitch * CANVAS_HEIGHT);
-	}
-	SDL_UnlockTexture(canvasTexture);
-
-	SDL_SetTextureScaleMode(canvasTexture, SDL_SCALEMODE_NEAREST);
+void paintModeUninit(void) {
+	// this is also empty for now until I make it create ui elements
 }
 
-void canvasModeUninit(void) {
-	free(canvasPixels);
-	for(uint8_t i = 0; i < MAX_UNDO; ++i) {
-		free(canvasHistory[i]);
-	}
-	unloadFont();
-}
-
-void canvasModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons) {
+void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons) {
 	switch(e->type) {
 		case SDL_EVENT_QUIT:
 			running = false;
@@ -139,17 +102,7 @@ void canvasModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float 
 		case SDL_EVENT_MOUSE_BUTTON_UP:
 			// if the left mouse button stops being held in the color picker area it wont add whatever brush stroke that was into the history, not really a big deal since most brush strokes will end up stopping in the canvas but maybe I should fix this anyways
 			if(selectedColor == 0xff && e->button.button == SDL_BUTTON_LEFT && e->button.x > DISPLAY_X) {
-				if(historyIndex < MAX_UNDO-1) {
-					++historyIndex;
-				} else {
-					printf("shifting undo history!\n");
-					for(uint8_t i = 0; i < historyIndex; ++i) {
-						printf("! %i -> %i\n", i+1, i);
-						copyCanvas(canvasHistory[i], canvasHistory[i+1]);
-					}
-				}
-				printf("! (canvas) -> %i\n", historyIndex);
-				copyCanvas(canvasHistory[historyIndex], canvasPixels);
+				updateCanvasHistory();
 			}
 			break;
 
@@ -157,21 +110,14 @@ void canvasModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float 
 			if(e->key.mod & SDL_KMOD_LCTRL) {
 				switch(e->key.key) {
 					case SDLK_Z:
-						if(historyIndex > 0) {
-							--historyIndex;
-						}
-						printf("<- %i\n", historyIndex);
-						copyCanvas(canvasPixels, canvasHistory[historyIndex]);
+						undoCanvas();
 						break;
 
 					case SDLK_S:
 						// would prefer to have the file saving stuff part of the actual ui eventually
 						// would need to implement text drawing and input stuff though
 						userdata = (saveDialogUserdata){
-							.savedCanvasPixels = canvasPixels,
-							.savedCanvasW = CANVAS_WIDTH,
-							.savedCanvasH = CANVAS_HEIGHT,
-							.savedCanvasPitch = canvasPitch,
+							.canvas = getCanvas(),
 							.savingFlag = &saving,
 						};
 						saving = true;
@@ -190,34 +136,27 @@ void canvasModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float 
 	SDL_SetRenderDrawColor(renderer, 125, 112, 104, 255);
 	SDL_RenderClear(renderer);
 
-	SDL_LockTexture(canvasTexture, NULL, (void**)&texturePixels, &canvasPitch);
-	copyCanvas(texturePixels, canvasPixels);
+	lockCanvasTexture();
 	if(!saving && selectedColor == 0xff) {
-		uint32_t* canvasPixel = canvasPixels;
-		uint32_t* texturePixel = texturePixels;
 		int16_t brushX = ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
 		int16_t brushY = ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
 		for(uint16_t y = MAX(0, brushY-brushSize); y < MIN(CANVAS_HEIGHT, brushY+brushSize); ++y) {
 			for(uint16_t x = MAX(0, brushX-brushSize); x < MIN(CANVAS_WIDTH, brushX+brushSize); ++x) {
 				// jank to keep both pointers in sync
-				uint32_t offset = (y*canvasPitch)+(x*sizeof(uint32_t));
-				texturePixel = (uint32_t*)((uint8_t*)texturePixels + offset);
-				canvasPixel = (uint32_t*)((uint8_t*)canvasPixels + offset);
-
 				uint32_t x2 = x - brushX;
 				uint32_t y2 = y - brushY;
 				if(x2*x2 + y2*y2 < brushSize*brushSize) {
 					// draw brush preview
-					*texturePixel = brushColor;
+					canvasTextureSetPixel(x, y, brushColor);
 					if(mouseButtons & SDL_BUTTON_LMASK) {
 						// draw brush to the actual canvas
-						*canvasPixel = brushColor;
+						canvasSetPixel(x, y, brushColor);
 					}
 				}
 			}
 		}
 	}
-	SDL_UnlockTexture(canvasTexture);
+	unlockCanvasTexture();
 
 	SDL_FRect colorDisplayRect = {
 		.x = 0,
@@ -234,7 +173,7 @@ void canvasModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float 
 		colorDisplayRect.y += 50;
 	}
 
-	SDL_RenderTexture(renderer, canvasTexture, NULL, &displayRect);
+	drawCanvas(renderer, DISPLAY_X, DISPLAY_Y, DISPLAY_WIDTH, DISPLAY_HEIGHT); 
 
 	if(selectedColor != 0xff) {
 		SDL_SetRenderDrawColor(renderer,0,0,0,0xc0);

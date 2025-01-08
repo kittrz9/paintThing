@@ -5,11 +5,10 @@
 
 #include <stdbool.h>
 
+#include "canvas.h"
+
 typedef struct {
-	uint32_t* savedCanvasPixels;
-	uint32_t savedCanvasW;
-	uint32_t savedCanvasH;
-	uint32_t savedCanvasPitch;
+	canvasData* canvas;
 
 	bool* savingFlag;
 } saveDialogUserdata;
