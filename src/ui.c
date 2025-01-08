@@ -4,16 +4,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// will probably implement actual buttons and stuff later on
 #define MAX_SLIDERS 32
 
 uiSlider sliders[MAX_SLIDERS];
-
 uiSlider* selectedSlider;
 
-void drawSliders(SDL_Renderer* renderer) {
+#define MAX_BUTTONS 32
+uiButton buttons[MAX_BUTTONS];
+
+void drawUI(SDL_Renderer* renderer) {
 	for(uint32_t i = 0; i < MAX_SLIDERS; ++i) {
-		if(sliders[i].size == 0) { continue; }
+		if(!sliders[i].allocated) { continue; }
 		SDL_FRect rect = {
 			.x = sliders[i].x + 5,
 			.y = sliders[i].y + 10,
@@ -32,10 +33,28 @@ void drawSliders(SDL_Renderer* renderer) {
 		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 		SDL_RenderFillRect(renderer, &rect2);
 	}
+
+	for(uint32_t i = 0; i < MAX_BUTTONS; ++i) {
+		if(!buttons[i].allocated) { continue; }
+		SDL_FRect rect = {
+			.x = buttons[i].x,
+			.y = buttons[i].y,
+			.w = buttons[i].w,
+			.h = buttons[i].h,
+		};
+		// need to draw the buttons as textures eventually
+		if(buttons[i].texture == NULL) {
+			uint8_t r = (buttons[i].color >> 24) & 0xff;
+			uint8_t g = (buttons[i].color >> 16) & 0xff;
+			uint8_t b = (buttons[i].color >> 8) & 0xff;
+			SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+			SDL_RenderFillRect(renderer, &rect);
+		}
+	}
 	return;
 }
 
-void updateSliders(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons) {
+void updateUI(SDL_Event* e, float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons) {
 	if(mouseButtons & SDL_BUTTON_LMASK){
 		if(selectedSlider != NULL) {
 			if(mousePosY < selectedSlider->y) {
@@ -47,7 +66,7 @@ void updateSliders(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseB
 			}
 		} else {
 			for(uint32_t i = 0; i < MAX_SLIDERS; ++i) {
-				if(sliders[i].size == 0) { continue; } // maybe should just make it being allocated its own flag for readability
+				if(!sliders[i].allocated) { continue; }
 				if(mousePosX > sliders[i].x && mousePosX < sliders[i].x + 20 && mousePosY > sliders[i].y && mousePosY < sliders[i].y + sliders[i].size) {
 					selectedSlider = &sliders[i];
 					break;
@@ -57,15 +76,26 @@ void updateSliders(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseB
 	} else {
 		selectedSlider = NULL;
 	}
+
+	switch(e->type) {
+		case SDL_EVENT_MOUSE_BUTTON_DOWN:
+			for(uint32_t i = 0; i < MAX_BUTTONS; ++i) {
+				if(buttons[i].allocated && mousePosX > buttons[i].x && mousePosX < buttons[i].x + buttons[i].w && mousePosY > buttons[i].y && mousePosY < buttons[i].y + buttons[i].h) {
+					buttons[i].clickCallback(mouseButtons);
+				}
+			}
+			break;
+	}
 }
 
 uiSlider* createSlider(float x, float y, float size) {
 	for(uint32_t i = 0; i < MAX_SLIDERS; ++i) {
-		if(sliders[i].size == 0) {
+		if(!sliders[i].allocated) {
 			sliders[i].x = x;
 			sliders[i].y = y;
 			sliders[i].size = size;
 			sliders[i].value = 0;
+			sliders[i].allocated = true;
 			return &sliders[i];
 		}
 	}
@@ -76,13 +106,32 @@ uiSlider* createSlider(float x, float y, float size) {
 void destroySlider(uiSlider* slider) {
 	for(uint32_t i = 0; i < MAX_SLIDERS; ++i) {
 		if(slider == &sliders[i]) {
-			sliders[i].size = 0;
+			sliders[i].allocated = false;
 			return;
 		}
 	}
 	printf("could not destroy slider!\n");
 }
 
+uiButton* createButton(float x, float y, float w, float h, SDL_Texture* texture, uint32_t color, void (*clickCallback)(SDL_MouseButtonFlags mouseButtons)) {
+	for(uint32_t i = 0; i < MAX_BUTTONS; ++i) {
+		if(!buttons[i].allocated) {
+			buttons[i].x = x;
+			buttons[i].y = y;
+			buttons[i].w = w;
+			buttons[i].h = h;
+			buttons[i].texture = texture;
+			buttons[i].color = color;
+			buttons[i].clickCallback = clickCallback;
+			buttons[i].allocated = true;
+			return &buttons[i];
+		}
+	}
+	printf("could not allocate button!\n");
+	return NULL;
+}
+void destroyButton(uiButton* button) {
+}
 
 SDL_Texture* fontTexture;
 // font stored in ascii order starting with !

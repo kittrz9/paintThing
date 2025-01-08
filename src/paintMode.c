@@ -42,8 +42,14 @@ uint8_t selectedColor = 0xff;
 
 bool saving = false;
 
+
+void testButtonCallback(SDL_MouseButtonFlags mouseButtons) {
+	printf("test button clicked! %i\n", mouseButtons);
+}
+
 void paintModeInit(SDL_Renderer* renderer) {
 	// currently empty, would probably create any ui elements here
+	createButton(DISPLAY_X + DISPLAY_WIDTH,20,100,50,NULL,0x220044ff,testButtonCallback);
 }
 
 void paintModeUninit(void) {
@@ -131,7 +137,7 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 		default: break;
 	}
 
-	updateSliders(mousePosX, mousePosY, mouseButtons);
+	updateUI(e, mousePosX, mousePosY, mouseButtons);
 
 	SDL_SetRenderDrawColor(renderer, 125, 112, 104, 255);
 	SDL_RenderClear(renderer);
@@ -187,7 +193,7 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 		palette[selectedColor] = (r<<24) | (g<<16) | (b<<8) | 0xff;
 	}
 
-	drawSliders(renderer);
+	drawUI(renderer);
 
 	if(saving) {
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xc0);
