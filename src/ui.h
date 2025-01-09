@@ -44,12 +44,12 @@ typedef struct {
 	uint32_t color;
 
 	// could probably use some va_arg shenanigans to pass whatever arguments to the callback specified when the button is created
-	void (*clickCallback)(SDL_MouseButtonFlags mouseButtons);
+	void (*clickCallback)(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons);
 
 	bool allocated;
 } uiButton;
 
-uiButton* createButton(float x, float y, float w, float h, SDL_Texture* texture, uint32_t color, void (*clickCallback)(SDL_MouseButtonFlags mouseButtons));
+uiButton* createButton(float x, float y, float w, float h, SDL_Texture* texture, uint32_t color, void (*clickCallback)(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons));
 void destroyButton(uiButton* button);
 
 void loadFont(SDL_Renderer* renderer, char* fontPath);

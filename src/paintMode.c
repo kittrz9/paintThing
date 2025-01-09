@@ -34,6 +34,9 @@ uint32_t palette[] = {
 	0x0000ffff,
 };
 
+// could just use the color stored in the buttons instead of the palette array since they're both kept in sync
+uiButton* paletteButtons[sizeof(palette)/sizeof(palette[0])];
+
 uiSlider* sliderR;
 uiSlider* sliderG;
 uiSlider* sliderB;
@@ -42,18 +45,37 @@ uint8_t selectedColor = 0xff;
 
 bool saving = false;
 
-
-void testButtonCallback(SDL_MouseButtonFlags mouseButtons) {
-	printf("test button clicked! %i\n", mouseButtons);
+void paletteButtonCallback(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons) {
+	uint8_t index = mousePosY/50;
+	if(mouseButtons & SDL_BUTTON_LMASK) {
+		brushColor = palette[index];
+	} else if(mouseButtons & SDL_BUTTON_RMASK) {
+		if(sliderR != NULL) { destroySlider(sliderR); }
+		if(sliderG != NULL) { destroySlider(sliderG); }
+		if(sliderB != NULL) { destroySlider(sliderB); }
+		selectedColor = index;
+		uint8_t r = (palette[selectedColor] >> 24) & 0xff;
+		uint8_t g = (palette[selectedColor] >> 16) & 0xff;
+		uint8_t b = (palette[selectedColor] >> 8) & 0xff;
+		sliderR = createSlider(220, selectedColor*50 + 25, 300);
+		sliderG = createSlider(260, selectedColor*50 + 25, 300);
+		sliderB = createSlider(300, selectedColor*50 + 25, 300);
+		sliderR->value = (r/255.0);
+		sliderG->value = (g/255.0);
+		sliderB->value = (b/255.0);
+	}
 }
 
 void paintModeInit(SDL_Renderer* renderer) {
-	// currently empty, would probably create any ui elements here
-	createButton(DISPLAY_X + DISPLAY_WIDTH,20,100,50,NULL,0x220044ff,testButtonCallback);
+	for(uint8_t i = 0; i < sizeof(palette)/sizeof(palette[0]); ++i) {
+		paletteButtons[i] = createButton(5,i*50 + 5,DISPLAY_X - 10,45,NULL,palette[i],paletteButtonCallback);
+	}
 }
 
 void paintModeUninit(void) {
-	// this is also empty for now until I make it create ui elements
+	for(uint8_t i = 0; i < sizeof(palette)/sizeof(palette[0]); ++i) {
+		destroyButton(paletteButtons[i]);
+	}
 }
 
 void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons) {
@@ -71,31 +93,10 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
 			if(e->button.x < DISPLAY_X) {
 				for(uint8_t i = 0; i < sizeof(palette)/sizeof(palette[0]); ++i) {
-					if(e->button.y > i*50 && e->button.y < (i+1) * 50) {
-						if(e->button.button == SDL_BUTTON_LEFT) {
-							brushColor = palette[i];
-							break;
-						}
-						if(e->button.button == SDL_BUTTON_RIGHT) {
-							if(sliderR != NULL) { destroySlider(sliderR); }
-							if(sliderG != NULL) { destroySlider(sliderG); }
-							if(sliderB != NULL) { destroySlider(sliderB); }
-							selectedColor = i;
-							uint8_t r = (palette[selectedColor] >> 24) & 0xff;
-							uint8_t g = (palette[selectedColor] >> 16) & 0xff;
-							uint8_t b = (palette[selectedColor] >> 8) & 0xff;
-							sliderR = createSlider(220, selectedColor*50 + 25, 300);
-							sliderG = createSlider(260, selectedColor*50 + 25, 300);
-							sliderB = createSlider(300, selectedColor*50 + 25, 300);
-							sliderR->value = (r/255.0);
-							sliderG->value = (g/255.0);
-							sliderB->value = (b/255.0);
-							break;
-						}
-					}
 				}
 			} else {
 				if(e->button.button == SDL_BUTTON_RIGHT) {
+					brushColor = palette[selectedColor];
 					selectedColor = 0xff;
 					destroySlider(sliderR);
 					destroySlider(sliderG);
@@ -170,14 +171,6 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 		.w = 50,
 		.h = 50,
 	};
-	for(uint8_t i = 0; i < sizeof(palette)/sizeof(palette[0]); ++i) {
-		uint8_t r = (palette[i] >> 24) & 0xff;
-		uint8_t g = (palette[i] >> 16) & 0xff;
-		uint8_t b = (palette[i] >> 8) & 0xff;
-		SDL_SetRenderDrawColor(renderer, r, g, b, 255);
-		SDL_RenderFillRect(renderer, &colorDisplayRect);
-		colorDisplayRect.y += 50;
-	}
 
 	drawCanvas(renderer, DISPLAY_X, DISPLAY_Y, DISPLAY_WIDTH, DISPLAY_HEIGHT); 
 
@@ -191,6 +184,7 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 		uint8_t g = sliderG->value*255;
 		uint8_t b = sliderB->value*255;
 		palette[selectedColor] = (r<<24) | (g<<16) | (b<<8) | 0xff;
+		paletteButtons[selectedColor]->color = (r<<24) | (g<<16) | (b<<8) | 0xff;
 	}
 
 	drawUI(renderer);

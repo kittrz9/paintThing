@@ -81,7 +81,7 @@ void updateUI(SDL_Event* e, float mousePosX, float mousePosY, SDL_MouseButtonFla
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
 			for(uint32_t i = 0; i < MAX_BUTTONS; ++i) {
 				if(buttons[i].allocated && mousePosX > buttons[i].x && mousePosX < buttons[i].x + buttons[i].w && mousePosY > buttons[i].y && mousePosY < buttons[i].y + buttons[i].h) {
-					buttons[i].clickCallback(mouseButtons);
+					buttons[i].clickCallback(mousePosX, mousePosY, mouseButtons);
 				}
 			}
 			break;
@@ -113,7 +113,7 @@ void destroySlider(uiSlider* slider) {
 	printf("could not destroy slider!\n");
 }
 
-uiButton* createButton(float x, float y, float w, float h, SDL_Texture* texture, uint32_t color, void (*clickCallback)(SDL_MouseButtonFlags mouseButtons)) {
+uiButton* createButton(float x, float y, float w, float h, SDL_Texture* texture, uint32_t color, void (*clickCallback)(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons)) {
 	for(uint32_t i = 0; i < MAX_BUTTONS; ++i) {
 		if(!buttons[i].allocated) {
 			buttons[i].x = x;
