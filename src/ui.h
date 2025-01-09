@@ -8,9 +8,13 @@
 #define SCREEN_WIDTH 1600
 #define SCREEN_HEIGHT 900
 
+extern SDL_Window* window;
+
 void drawUI(SDL_Renderer* renderer);
 
 void updateUI(SDL_Event* e, float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons);
+
+void resetUI(void);
 
 enum uiSliderOrientation {
 	UI_SLIDER_HORIZONTAL,

@@ -8,8 +8,6 @@
 // should get the framerate of the current monitor, just hard coded to my monitor's refresh rate for now
 #define FRAMERATE 144
 
-SDL_Window* window;
-
 SDL_Renderer* renderer;
 
 int main(int argc, char** argv) {

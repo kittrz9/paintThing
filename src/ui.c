@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+SDL_Window* window;
+
 #define MAX_SLIDERS 32
 
 uiSlider sliders[MAX_SLIDERS];
@@ -85,6 +87,15 @@ void updateUI(SDL_Event* e, float mousePosX, float mousePosY, SDL_MouseButtonFla
 				}
 			}
 			break;
+	}
+}
+
+void resetUI(void) {
+	for(uint32_t i = 0; i < MAX_SLIDERS; ++i) {
+		sliders[i].allocated = false;
+	}
+	for(uint32_t i = 0; i < MAX_BUTTONS; ++i) {
+		buttons[i].allocated = false;
 	}
 }
 

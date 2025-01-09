@@ -5,15 +5,12 @@
 #include <sys/param.h> // MAX and MIN macros
 
 #include "ui.h"
-#include "save.h"
 #include "canvas.h"
 
 #define DISPLAY_WIDTH (SCREEN_WIDTH * (3.0/4.0))
 #define DISPLAY_HEIGHT (SCREEN_HEIGHT + 4.0)
 #define DISPLAY_X ((SCREEN_WIDTH - DISPLAY_WIDTH)/2.0)
 #define DISPLAY_Y 0.0
-
-saveDialogUserdata userdata;
 
 SDL_FRect displayRect = {
 	.x = DISPLAY_X,
@@ -73,9 +70,7 @@ void paintModeInit(SDL_Renderer* renderer) {
 }
 
 void paintModeUninit(void) {
-	for(uint8_t i = 0; i < sizeof(palette)/sizeof(palette[0]); ++i) {
-		destroyButton(paletteButtons[i]);
-	}
+	resetUI();
 }
 
 void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons) {
