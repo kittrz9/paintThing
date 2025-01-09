@@ -3,7 +3,7 @@
 set -xe
 
 CC=clang
-CFLAGS="-Wall -Wextra -Wpedantic -std=c99 -g"
+CFLAGS="-Wall -Wextra -Wpedantic -std=c99 -g -D_XOPEN_SOURCE=700"
 LIBS="-lm"
 INCLUDES=""
 

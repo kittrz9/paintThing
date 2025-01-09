@@ -121,7 +121,9 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 						break;
 
 					case SDLK_S:
-						// would prefer to have the file saving stuff part of the actual ui eventually
+						modeSwitch(&saveMode, renderer);
+						return;
+						/*// would prefer to have the file saving stuff part of the actual ui eventually
 						// would need to implement text drawing and input stuff though
 						userdata = (saveDialogUserdata){
 							.canvas = getCanvas(),
@@ -129,7 +131,7 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 						};
 						saving = true;
 						SDL_ShowSaveFileDialog(saveCanvasCallback, (void*)&userdata, NULL, saveDialogFilters, sizeof(saveDialogFilters)/sizeof(saveDialogFilters[0]), NULL);
-						break;
+						break;*/
 					default: break;
 				}
 			}

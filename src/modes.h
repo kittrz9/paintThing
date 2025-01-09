@@ -17,5 +17,6 @@ void modeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float mouseP
 extern bool running;
 
 #include "paintMode.h"
+#include "saveMode.h"
 
 #endif // MODES_H
