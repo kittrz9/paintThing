@@ -148,11 +148,10 @@ uiButton* createButton(float x, float y, float w, float h, SDL_Texture* texture,
 void destroyButton(uiButton* button) {
 }
 
-uint8_t* fontImg;
 SDL_Texture* fontTexture;
 // font stored in ascii order starting with !
 void loadFont(SDL_Renderer* renderer) {
-	fontImg = malloc(4*fontImgW*fontImgH);
+	uint8_t* fontImg = malloc(4*fontImgW*fontImgH);
 	uint64_t memLimit = 67108864; // 64M
 	uint8_t* inPos = 0;
 	uint8_t* outPos = 0;
@@ -168,6 +167,7 @@ void loadFont(SDL_Renderer* renderer) {
 	SDL_SetTextureScaleMode(fontTexture, SDL_SCALEMODE_NEAREST);
 
 	SDL_DestroySurface(fontSurface);
+	free(fontImg);
 }
 
 void drawText(SDL_Renderer* renderer, char* str, float x, float y, float scale) {
@@ -194,5 +194,4 @@ void drawText(SDL_Renderer* renderer, char* str, float x, float y, float scale) 
 // but idk maybe stuff sent to the gpu doesn't get freed and this causes a tiny memory leak
 void unloadFont(void) {
 	SDL_DestroyTexture(fontTexture);
-	free(fontImg);
 }

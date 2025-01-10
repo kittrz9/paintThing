@@ -1,4 +1,5 @@
 SDL*
+xz*
 build/
 obj/
 src/generated/*

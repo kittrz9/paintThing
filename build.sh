@@ -4,7 +4,7 @@ set -xe
 
 CC=clang
 CFLAGS="-Wall -Wextra -Wpedantic -std=c99 -g -D_XOPEN_SOURCE=700"
-LIBS="-lm -llzma"
+LIBS="-lm"
 INCLUDES=""
 
 CFILES="$(find src/ -name "*.c")"
@@ -18,7 +18,9 @@ mkdir build/ obj/
 . ./get-dependencies.sh
 
 mkdir -p src/generated
-./imageToC.py font.bmp
+if ! [ -f src/generated/font.c ]; then
+	./imageToC.py font.bmp
+fi
 
 for d in $SRC_DIRS; do
 	OBJDIR="$(echo $d | sed -e "s/src/obj/")"

@@ -4,6 +4,10 @@ SDL3_LINK="https://github.com/libsdl-org/SDL/releases/download/preview-3.1.6/SDL
 SDL3_ARCHIVE="SDL3-3.1.6.tar.gz"
 SDL3_DIR="SDL3-3.1.6"
 
+XZ_UTILS_LINK="https://github.com/tukaani-project/xz/releases/download/v5.6.3/xz-5.6.3.tar.xz"
+XZ_UTILS_ARCHIVE="xz-5.6.3.tar.xz"
+XZ_UTILS_DIR="xz-5.6.3"
+
 if [ -z "$ORIGIN_DIR" ]; then
 	ORIGIN_DIR="$(readlink -f "$(dirname "$0")")"
 	cd "$ORIGIN_DIR" || exit 1
@@ -30,6 +34,23 @@ fi
 
 cp "$SDL3_DIR/build/libSDL3.so" "$SDL3_DIR/build/libSDL3.so.0" build/
 
+
+
+if ! [ -f "$XZ_UTILS_ARCHIVE" ]; then
+	wget "$XZ_UTILS_LINK" -O "$XZ_UTILS_ARCHIVE"
+fi
+
+if ! [ -d "$XZ_UTILS_DIR" ]; then
+	tar -xavf "$XZ_UTILS_ARCHIVE"
+fi
+
+if ! [ -f "$XZ_UTILS_DIR/src/liblzma/.libs/liblzma.a" ]; then
+	cd "$ORIGIN_DIR/$XZ_UTILS_DIR" || exit 1
+	./configure
+	make -j12
+	cd "$ORIGIN_DIR" || exit 1
+fi
+
 export INCLUDES="$INCLUDES -I$SDL3_DIR/include"
-export LIBS="$LIBS -Wl,-rpath=./ -Wl,-rpath=build/ -L./build/ -lSDL3"
+export LIBS="$LIBS -Wl,-rpath=./ -Wl,-rpath=build/ -L./build/ -lSDL3 $XZ_UTILS_DIR/src/liblzma/.libs/liblzma.a"
 
