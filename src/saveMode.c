@@ -28,6 +28,8 @@ float scrollPosition;
 
 char fileName[MAX_DIR_ENTRY_LEN] = "asdfasdf";
 
+bool enteringName;
+
 #define DIR_LIST_X 20
 #define DIR_LIST_Y 350
 #define DIR_LIST_WIDTH (SCREEN_WIDTH - 40)
@@ -182,9 +184,12 @@ void saveModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float mo
 				}
 			}
 			if(e->button.y > NAME_ENTRY_Y && e->button.y < NAME_ENTRY_Y + NAME_ENTRY_HEIGHT && e->button.x > NAME_ENTRY_X && e->button.x < NAME_ENTRY_WIDTH) {
+				selectedEntry = 0xffffffff;
 				SDL_StartTextInput(window);
+				enteringName = true;
 			} else {
 				SDL_StopTextInput(window);
+				enteringName = false;
 			}
 			break;
 		case SDL_EVENT_KEY_DOWN:
@@ -195,6 +200,9 @@ void saveModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float mo
 						sprintf(newDir, "%s/%s", currentDir, dirEntries[selectedEntry]);
 						loadDir(newDir);
 						selectedEntry = 0xffffffff;
+					} else if(enteringName){
+						// saves the image, maybe should change the function name if I'm going to use it like this
+						saveButtonCallback(mousePosX, mousePosY, mouseButtons);
 					}
 					break;
 				case SDLK_BACKSPACE:
@@ -235,6 +243,11 @@ void saveModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float mo
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xa0);
 	SDL_RenderFillRect(renderer, &nameEntryRect);
 	drawText(renderer, fileName, NAME_ENTRY_X + 2, NAME_ENTRY_Y + 2, 2.0);
+
+	if(enteringName) {
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+		SDL_RenderFillRect(renderer, &(SDL_FRect){NAME_ENTRY_X+2 + strlen(fileName)*16, NAME_ENTRY_Y, 4, 32});
+	}
 
 	drawCanvas(renderer, SCREEN_WIDTH/2 - 200, 20, 400, 300);
 

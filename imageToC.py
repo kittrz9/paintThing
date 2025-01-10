@@ -1,7 +1,5 @@
 #!/bin/env python3
 
-# could probably compress the images, especially with something like the font being just two colors
-
 import sys
 import os
 from PIL import Image
