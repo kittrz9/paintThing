@@ -7,13 +7,11 @@ import os
 from PIL import Image
 from datetime import datetime
 
+# tried bzip2 but I couldn't get it to either compress or decompress right, I'm not sure which
+import lzma
+
 def main():
-	if len(sys.argv) != 3:
-		return 1
-
 	filePath = sys.argv[1]
-
-	mode = sys.argv[2]
 
 	name = os.path.basename(filePath).split(".")[0]
 
@@ -22,34 +20,41 @@ def main():
 
 	img = Image.open(filePath)
 	imgRGBA = img.convert("RGBA")
-	pixels = imgRGBA.load()
+	imgBytes = imgRGBA.tobytes()
+
+	compressedBytes = lzma.compress(imgBytes)
+
+	dataFile = ""
+	dataFile += "/*\n"
+	dataFile += f"\tgenerated on {datetime.today().strftime('%Y-%m-%d %H:%M:%S')}\n"
+	dataFile += f"\t\"{' '.join(sys.argv)}\"\n"
+	dataFile += "*/\n"
+	dataFile += "#include <stdint.h>\n"
+	dataFile += f"uint16_t {name}ImgW = {img.size[0]};\n"
+	dataFile += f"uint16_t {name}ImgH = {img.size[1]};\n"
+	dataFile += f"uint8_t {name}ImgLZMA[] = {{\n"
+	for b in compressedBytes:
+		dataFile += hex(b)
+		dataFile += ","
+	dataFile += "\n};\n"
+
+	with open(f"src/generated/{name}.c", "w") as f:
+		f.write(dataFile)
 
 
-	if(mode[0] == 'c'):
-		print("/*")
-		print(f"\tgenerated on {datetime.today().strftime('%Y-%m-%d %H:%M:%S')}")
-		print(f"\t\"{' '.join(sys.argv)}\"")
-		print("*/")
-		print("#include <stdint.h>")
-		print(f"uint16_t {name}ImgW = {img.size[0]};")
-		print(f"uint16_t {name}ImgH = {img.size[1]};")
-		print(f"uint8_t {name}Img[] = {{")
-		for y in range(img.size[1]):
-			for x in range(img.size[0]):
-				print(pixels[x,y][0], end=',')
-				print(pixels[x,y][1], end=',')
-				print(pixels[x,y][2], end=',')
-				print(pixels[x,y][3], end=',')
-		print("\n};")
-	elif(mode[0] == 'h'):
-		print("/*")
-		print(f"\tgenerated on {datetime.today().strftime('%Y-%m-%d %H:%M:%S')}")
-		print(f"\t\"{' '.join(sys.argv)}\"")
-		print("*/")
-		print("#include <stdint.h>")
-		print(f"extern uint16_t {name}ImgW;")
-		print(f"extern uint16_t {name}ImgH;")
-		print(f"extern uint8_t {name}Img[];")
+	headerFile = ""
+	headerFile += "/*\n"
+	headerFile += f"\tgenerated on {datetime.today().strftime('%Y-%m-%d %H:%M:%S')}\n"
+	headerFile += f"\t\"{' '.join(sys.argv)}\"\n"
+	headerFile += "*/\n"
+	headerFile += "#include <stdint.h>\n"
+	headerFile += f"extern uint16_t {name}ImgW;\n"
+	headerFile += f"extern uint16_t {name}ImgH;\n"
+	headerFile += f"extern uint8_t {name}ImgLZMA[];\n"
+	headerFile += f"#define {name}ImgLZMALen {len(compressedBytes)}\n"
+
+	with open(f"src/generated/{name}.h", "w") as f:
+		f.write(headerFile)
 	
 	return 0
 

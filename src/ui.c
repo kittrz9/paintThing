@@ -6,6 +6,8 @@
 
 #include "generated/font.h"
 
+#include <lzma.h>
+
 SDL_Window* window;
 
 #define MAX_SLIDERS 32
@@ -146,11 +148,15 @@ uiButton* createButton(float x, float y, float w, float h, SDL_Texture* texture,
 void destroyButton(uiButton* button) {
 }
 
+uint8_t* fontImg;
 SDL_Texture* fontTexture;
 // font stored in ascii order starting with !
-// probably should just include the font directly in the code to avoid finding and loading a file that could be moved or deleted
 void loadFont(SDL_Renderer* renderer) {
-	//SDL_Surface* fontSurface = SDL_LoadBMP(fontPath);
+	fontImg = malloc(4*fontImgW*fontImgH);
+	uint64_t memLimit = 67108864; // 64M
+	uint8_t* inPos = 0;
+	uint8_t* outPos = 0;
+	lzma_stream_buffer_decode(&memLimit, 0, NULL, fontImgLZMA, &inPos, fontImgLZMALen, fontImg, &outPos, 4*fontImgW*fontImgH);
 	SDL_Surface* fontSurface = SDL_CreateSurfaceFrom(fontImgW, fontImgH, SDL_PIXELFORMAT_RGBA32, fontImg, fontImgW * 4);
 
 	if(fontSurface == NULL) {
@@ -188,4 +194,5 @@ void drawText(SDL_Renderer* renderer, char* str, float x, float y, float scale) 
 // but idk maybe stuff sent to the gpu doesn't get freed and this causes a tiny memory leak
 void unloadFont(void) {
 	SDL_DestroyTexture(fontTexture);
+	free(fontImg);
 }
