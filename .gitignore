@@ -1,3 +1,4 @@
 SDL*
 build/
 obj/
+src/generated/*

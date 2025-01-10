@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
 
 	initCanvas(renderer);
 
-	loadFont(renderer, "font.bmp");
+	loadFont(renderer);
 
 	modeSwitch(&paintMode, renderer);
 

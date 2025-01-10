@@ -56,7 +56,7 @@ typedef struct {
 uiButton* createButton(float x, float y, float w, float h, SDL_Texture* texture, uint32_t color, void (*clickCallback)(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons));
 void destroyButton(uiButton* button);
 
-void loadFont(SDL_Renderer* renderer, char* fontPath);
+void loadFont(SDL_Renderer* renderer);
 void drawText(SDL_Renderer* renderer, char* str, float x, float y, float scale);
 void unloadFont(void);
 

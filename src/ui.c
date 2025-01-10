@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "generated/font.h"
+
 SDL_Window* window;
 
 #define MAX_SLIDERS 32
@@ -147,11 +149,12 @@ void destroyButton(uiButton* button) {
 SDL_Texture* fontTexture;
 // font stored in ascii order starting with !
 // probably should just include the font directly in the code to avoid finding and loading a file that could be moved or deleted
-void loadFont(SDL_Renderer* renderer, char* fontPath) {
-	SDL_Surface* fontSurface = SDL_LoadBMP(fontPath);
+void loadFont(SDL_Renderer* renderer) {
+	//SDL_Surface* fontSurface = SDL_LoadBMP(fontPath);
+	SDL_Surface* fontSurface = SDL_CreateSurfaceFrom(fontImgW, fontImgH, SDL_PIXELFORMAT_RGBA32, fontImg, fontImgW * 4);
 
 	if(fontSurface == NULL) {
-		printf("could not load font file \"%s\", %s\n", fontPath, SDL_GetError());
+		printf("could not load font, %s\n", SDL_GetError());
 		exit(1);
 	}
 
