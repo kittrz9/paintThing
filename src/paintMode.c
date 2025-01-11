@@ -92,7 +92,7 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 				for(uint8_t i = 0; i < sizeof(palette)/sizeof(palette[0]); ++i) {
 				}
 			} else {
-				if(e->button.button == SDL_BUTTON_RIGHT) {
+				if(e->button.button == SDL_BUTTON_RIGHT && selectedColor != 0xff) {
 					brushColor = palette[selectedColor];
 					selectedColor = 0xff;
 					destroySlider(sliderR);
