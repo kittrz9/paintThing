@@ -153,8 +153,8 @@ SDL_Texture* fontTexture;
 void loadFont(SDL_Renderer* renderer) {
 	uint8_t* fontImg = malloc(4*fontImgW*fontImgH);
 	uint64_t memLimit = 67108864; // 64M
-	uint8_t* inPos = 0;
-	uint8_t* outPos = 0;
+	size_t inPos = 0;
+	size_t outPos = 0;
 	lzma_stream_buffer_decode(&memLimit, 0, NULL, fontImgLZMA, &inPos, fontImgLZMALen, fontImg, &outPos, 4*fontImgW*fontImgH);
 	SDL_Surface* fontSurface = SDL_CreateSurfaceFrom(fontImgW, fontImgH, SDL_PIXELFORMAT_RGBA32, fontImg, fontImgW * 4);
 

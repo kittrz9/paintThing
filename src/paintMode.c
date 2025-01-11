@@ -2,7 +2,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/param.h> // MAX and MIN macros
+
+#define MAX(x,y) (x > y ? x : y)
+#define MIN(x,y) (x < y ? x : y)
 
 #include "ui.h"
 #include "canvas.h"

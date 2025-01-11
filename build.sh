@@ -2,6 +2,7 @@
 
 set -xe
 
+#CC=x86_64-w64-mingw32-gcc
 CC=clang
 CFLAGS="-Wall -Wextra -Wpedantic -std=c99 -g -D_XOPEN_SOURCE=700"
 LIBS="-lm"
