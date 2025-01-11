@@ -92,13 +92,18 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 				for(uint8_t i = 0; i < sizeof(palette)/sizeof(palette[0]); ++i) {
 				}
 			} else {
-				if(e->button.button == SDL_BUTTON_RIGHT && selectedColor != 0xff) {
-					brushColor = palette[selectedColor];
-					selectedColor = 0xff;
-					destroySlider(sliderR);
-					destroySlider(sliderG);
-					destroySlider(sliderB);
-					break;
+				if(e->button.button == SDL_BUTTON_RIGHT) {
+					if(selectedColor != 0xff) {
+						brushColor = palette[selectedColor];
+						selectedColor = 0xff;
+						destroySlider(sliderR);
+						destroySlider(sliderG);
+						destroySlider(sliderB);
+					} else {
+						int16_t brushX = ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
+						int16_t brushY = ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
+						brushColor = canvasGetPixel(brushX, brushY);
+					}
 				}
 			}
 			break;

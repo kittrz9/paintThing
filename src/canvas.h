@@ -23,6 +23,8 @@ void unlockCanvasTexture(void);
 void canvasTextureSetPixel(uint32_t x, uint32_t y, uint32_t color);
 void canvasSetPixel(uint32_t x, uint32_t y, uint32_t color);
 
+uint32_t canvasGetPixel(uint32_t x, uint32_t y);
+
 void updateCanvasHistory(void);
 void undoCanvas(void);
 

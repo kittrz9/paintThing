@@ -78,6 +78,11 @@ void canvasSetPixel(uint32_t x, uint32_t y, uint32_t color) {
 	*canvasPixel = color;
 }
 
+uint32_t canvasGetPixel(uint32_t x, uint32_t y) {
+	uint32_t offset = (y*canvasPitch)+(x*sizeof(uint32_t));
+	return  *(uint32_t*)((uint8_t*)canvasPixels + offset);
+}
+
 void drawCanvas(SDL_Renderer* renderer, float x, float y, float w, float h) {
 	SDL_FRect rect = {
 		.x = x,
