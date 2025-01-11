@@ -5,9 +5,6 @@
 #include <string.h>
 #include <limits.h>
 
-#define __USE_MISC // so DT_TYPE is defined
-#include <dirent.h>
-
 #include "ui.h"
 #include "canvas.h"
 
@@ -118,31 +115,19 @@ int dirCmp(const void* a, const void* b) {
 	return strcmp((const char*)a, (const char*)b);
 }
 
+SDL_EnumerationResult addDirEntry(void* userdata, const char* dirname, const char* filename) {
+	strcpy(dirEntries[currentDirSize], filename);
+	++currentDirSize;
+	return SDL_ENUM_CONTINUE;
+}
+
 void loadDir(char* path) {
-	printf("%s\n", realpath(path, currentDir));
-	DIR* d = opendir(path);
-
-	if(d == NULL) {
-		printf("could not open dir \"%s\"\n", path);
-		return;
-	}
-
-	for(uint32_t i  = 0; i< MAX_DIR_SIZE; ++i) {
-		dirEntries[i][0] = '\0';
-	}
-	for(currentDirSize = 0; currentDirSize < MAX_DIR_SIZE; ++currentDirSize) {
-		struct dirent* dir = readdir(d);
-		if(dir == NULL) {
-			break;
-		}
-		strcpy(dirEntries[currentDirSize], dir->d_name);
-		if(dir->d_type == DT_DIR) {
-			strcat(dirEntries[currentDirSize], "/");
-		}
-	}
+	currentDirSize = 0;
+	addDirEntry(NULL, NULL, ".");
+	addDirEntry(NULL, NULL, "..");
+	SDL_EnumerateDirectory(path, addDirEntry, NULL);
 	dirEntries[currentDirSize][0] = '\0';
 	qsort(dirEntries, currentDirSize, MAX_DIR_ENTRY_LEN, dirCmp);
-	closedir(d);
 
 	strcpy(currentDir, path);
 
@@ -173,7 +158,7 @@ void saveModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float mo
 			break;
 		case SDL_EVENT_MOUSE_WHEEL:
 			if((e->wheel.y < 0 && currentDirSize*37 + scrollPosition > DIR_LIST_HEIGHT) || (e->wheel.y > 0 && scrollPosition < 0)) {
-				scrollPosition += e->wheel.y * 5;
+				scrollPosition += e->wheel.y * 25;
 			}
 			break;
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
