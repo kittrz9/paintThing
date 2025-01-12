@@ -24,6 +24,8 @@ SDL_FRect displayRect = {
 uint8_t brushSize = 1;
 uint32_t brushColor = 0x0000ffff;
 
+uint32_t brushStartX;
+
 uint32_t palette[] = {
 	0x000000ff,
 	0x777777ff,
@@ -107,10 +109,7 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 			break;
 
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
-			if(e->button.x < DISPLAY_X) {
-				for(uint8_t i = 0; i < sizeof(palette)/sizeof(palette[0]); ++i) {
-				}
-			} else {
+			if(e->button.x > DISPLAY_X && e->button.x < DISPLAY_X + DISPLAY_WIDTH) {
 				if(e->button.button == SDL_BUTTON_RIGHT) {
 					if(selectedColor != 0xff) {
 						brushColor = palette[selectedColor];
@@ -123,15 +122,17 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 						int16_t brushY = ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
 						brushColor = canvasGetPixel(brushX, brushY);
 					}
+				} else if(e->button.button == SDL_BUTTON_LEFT) {
+					brushStartX = e->button.x;
 				}
 			}
 			break;
 
 		case SDL_EVENT_MOUSE_BUTTON_UP:
-			// if the left mouse button stops being held in the color picker area it wont add whatever brush stroke that was into the history, not really a big deal since most brush strokes will end up stopping in the canvas but maybe I should fix this anyways
-			if(selectedColor == 0xff && e->button.button == SDL_BUTTON_LEFT && e->button.x > DISPLAY_X && e->button.x < DISPLAY_X + DISPLAY_WIDTH) {
+			if(selectedColor == 0xff && e->button.button == SDL_BUTTON_LEFT && brushStartX > DISPLAY_X && brushStartX < DISPLAY_X + DISPLAY_WIDTH) {
 				updateCanvasHistory();
 			}
+			brushStartX = 0;
 			break;
 
 		case SDL_EVENT_KEY_DOWN:
@@ -182,7 +183,7 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 				if(x2*x2 + y2*y2 < brushSize*brushSize) {
 					// draw brush preview
 					canvasTextureSetPixel(x, y, brushColor);
-					if(mouseButtons & SDL_BUTTON_LMASK) {
+					if(mouseButtons & SDL_BUTTON_LMASK && brushStartX > DISPLAY_X && brushStartX < DISPLAY_X + DISPLAY_WIDTH) {
 						// draw brush to the actual canvas
 						canvasSetPixel(x, y, brushColor);
 					}
