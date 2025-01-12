@@ -31,6 +31,9 @@ uint32_t palette[] = {
 	0xff0000ff,
 	0x00ff00ff,
 	0x0000ffff,
+	0x00ffffff,
+	0xff00ffff,
+	0xffff00ff,
 };
 
 // could just use the color stored in the buttons instead of the palette array since they're both kept in sync
@@ -40,9 +43,14 @@ uiSlider* sliderR;
 uiSlider* sliderG;
 uiSlider* sliderB;
 
+uiSlider* ditherSlider;
+uiButton* ditherButton;
+
 uint8_t selectedColor = 0xff;
 
 bool saving = false;
+
+bool dither = false;
 
 void paletteButtonCallback(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons) {
 	uint8_t index = mousePosY/50;
@@ -65,10 +73,21 @@ void paletteButtonCallback(float mousePosX, float mousePosY, SDL_MouseButtonFlag
 	}
 }
 
+void ditherButtonCallback(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons) {
+	dither = !dither;
+	if(dither) {
+		ditherButton->color = 0x2266aaff;
+	} else { 
+		ditherButton->color = 0x555555ff;
+	}
+}
+
 void paintModeInit(SDL_Renderer* renderer) {
 	for(uint8_t i = 0; i < sizeof(palette)/sizeof(palette[0]); ++i) {
 		paletteButtons[i] = createButton(5,i*50 + 5,DISPLAY_X - 10,45,NULL,palette[i],paletteButtonCallback);
 	}
+	ditherButton = createButton(SCREEN_WIDTH - (DISPLAY_X/2) - 20, 75, 50, 50, NULL, 0x555555ff, ditherButtonCallback);
+	ditherSlider = createSlider(SCREEN_WIDTH - (DISPLAY_X/2), 150, 300);
 }
 
 void paintModeUninit(void) {
@@ -110,7 +129,7 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 
 		case SDL_EVENT_MOUSE_BUTTON_UP:
 			// if the left mouse button stops being held in the color picker area it wont add whatever brush stroke that was into the history, not really a big deal since most brush strokes will end up stopping in the canvas but maybe I should fix this anyways
-			if(selectedColor == 0xff && e->button.button == SDL_BUTTON_LEFT && e->button.x > DISPLAY_X) {
+			if(selectedColor == 0xff && e->button.button == SDL_BUTTON_LEFT && e->button.x > DISPLAY_X && e->button.x < DISPLAY_X + DISPLAY_WIDTH) {
 				updateCanvasHistory();
 			}
 			break;
@@ -153,6 +172,10 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 		int16_t brushY = ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
 		for(uint16_t y = MAX(0, brushY-brushSize); y < MIN(CANVAS_HEIGHT, brushY+brushSize); ++y) {
 			for(uint16_t x = MAX(0, brushX-brushSize); x < MIN(CANVAS_WIDTH, brushX+brushSize); ++x) {
+				float ditherSize = (ditherSlider->value * 20) + 1;
+				if(dither && (x/(uint32_t)ditherSize+y/(uint32_t)ditherSize) % 2 == 0) {
+					continue;
+				}
 				// jank to keep both pointers in sync
 				uint32_t x2 = x - brushX;
 				uint32_t y2 = y - brushY;
@@ -197,6 +220,8 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xc0);
 		SDL_RenderFillRect(renderer, NULL);
 	}
+
+	drawText(renderer, "dither:", SCREEN_WIDTH-150, 25, 2.0);
 
 	drawText(renderer, "test string", 0,SCREEN_HEIGHT-32,2.0);
 }
