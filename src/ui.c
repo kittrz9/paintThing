@@ -18,6 +18,9 @@ uiSlider* selectedSlider;
 #define MAX_BUTTONS 32
 uiButton buttons[MAX_BUTTONS];
 
+#define MAX_CHECKBOXES 32
+uiCheckbox checkboxes[MAX_CHECKBOXES];
+
 void drawUI(SDL_Renderer* renderer) {
 	for(uint32_t i = 0; i < MAX_SLIDERS; ++i) {
 		if(!sliders[i].allocated) { continue; }
@@ -57,6 +60,22 @@ void drawUI(SDL_Renderer* renderer) {
 			SDL_RenderFillRect(renderer, &rect);
 		}
 	}
+
+	for(uint32_t i = 0; i < MAX_CHECKBOXES; ++i) {
+		if(!checkboxes[i].allocated) { continue; }
+		SDL_FRect rect = {
+			.x = checkboxes[i].x,
+			.y = checkboxes[i].y,
+			.w = checkboxes[i].size,
+			.h = checkboxes[i].size,
+		};
+		if(*checkboxes[i].flag) {
+			SDL_SetRenderDrawColor(renderer, 0x22, 0x66, 0xaa, 0xff);
+		} else {
+			SDL_SetRenderDrawColor(renderer, 0x55, 0x55, 0x55, 0xff);
+		}
+		SDL_RenderFillRect(renderer, &rect);
+	}
 	return;
 }
 
@@ -90,6 +109,11 @@ void updateUI(SDL_Event* e, float mousePosX, float mousePosY, SDL_MouseButtonFla
 					buttons[i].clickCallback(mousePosX, mousePosY, mouseButtons);
 				}
 			}
+			for(uint32_t i = 0; i < MAX_CHECKBOXES; ++i) {
+				if(checkboxes[i].allocated && mousePosX > checkboxes[i].x && mousePosX < checkboxes[i].x + checkboxes[i].size && mousePosY > checkboxes[i].y && mousePosY < checkboxes[i].y + checkboxes[i].size) {
+					*checkboxes[i].flag = !*checkboxes[i].flag;
+				}
+			}
 			break;
 	}
 }
@@ -100,6 +124,9 @@ void resetUI(void) {
 	}
 	for(uint32_t i = 0; i < MAX_BUTTONS; ++i) {
 		buttons[i].allocated = false;
+	}
+	for(uint32_t i = 0; i < MAX_CHECKBOXES; ++i) {
+		checkboxes[i].allocated = false;
 	}
 }
 
@@ -147,6 +174,24 @@ uiButton* createButton(float x, float y, float w, float h, SDL_Texture* texture,
 }
 void destroyButton(uiButton* button) {
 }
+
+uiCheckbox* createCheckbox(float x, float y, float size, bool* flag) {
+	for(uint32_t i = 0; i < MAX_CHECKBOXES; ++i) {
+		if(!checkboxes[i].allocated) {
+			checkboxes[i].x = x;
+			checkboxes[i].y = y;
+			checkboxes[i].size = size;
+			checkboxes[i].flag = flag;
+			checkboxes[i].allocated = true;
+			return &checkboxes[i];
+		}
+	}
+	printf("could not allocate check box!\n");
+	return NULL;
+}
+void destroyCheckbox(uiCheckbox* checkbox) {
+}
+
 
 SDL_Texture* fontTexture;
 // font stored in ascii order starting with !

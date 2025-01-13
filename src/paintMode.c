@@ -57,8 +57,7 @@ uiButton* ditherButton;
 
 uint8_t selectedColor = 0xff;
 
-bool saving = false;
-
+// should really start to make a tool system instead of doing this
 bool dither = false;
 
 bool fillTool = false;
@@ -97,8 +96,10 @@ void paintModeInit(SDL_Renderer* renderer) {
 	for(uint8_t i = 0; i < sizeof(palette)/sizeof(palette[0]); ++i) {
 		paletteButtons[i] = createButton(5,i*50 + 5,DISPLAY_X - 10,45,NULL,palette[i],paletteButtonCallback);
 	}
-	ditherButton = createButton(SCREEN_WIDTH - (DISPLAY_X/2) - 20, 75, 50, 50, NULL, 0x555555ff, ditherButtonCallback);
+	ditherButton = createButton(SCREEN_WIDTH - (DISPLAY_X/2) - 25, 75, 50, 50, NULL, 0x555555ff, ditherButtonCallback);
 	ditherSlider = createSlider(SCREEN_WIDTH - (DISPLAY_X/2), 150, 300);
+
+	createCheckbox(SCREEN_WIDTH - (DISPLAY_X/2)-25, 550, 50, &fillTool);
 }
 
 void paintModeUninit(void) {
@@ -218,7 +219,6 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 			} else {
 				switch(e->key.key) {
 					case SDLK_F:
-						printf("%i\n",fillTool);
 						fillTool = !fillTool;
 						break;
 				}
@@ -234,7 +234,7 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 	SDL_RenderClear(renderer);
 
 	lockCanvasTexture();
-	if(!saving && selectedColor == 0xff) {
+	if(selectedColor == 0xff) {
 		for(uint16_t y = MAX(0, brushY-brushSize); y < MIN(CANVAS_HEIGHT, brushY+brushSize); ++y) {
 			for(uint16_t x = MAX(0, brushX-brushSize); x < MIN(CANVAS_WIDTH, brushX+brushSize); ++x) {
 				float ditherSize = (ditherSlider->value * 20) + 1;
@@ -247,7 +247,7 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 				if(x2*x2 + y2*y2 < brushSize*brushSize) {
 					// draw brush preview
 					canvasTextureSetPixel(x, y, brushColor);
-					if(mouseButtons & SDL_BUTTON_LMASK && brushStartX > DISPLAY_X && brushStartX < DISPLAY_X + DISPLAY_WIDTH) {
+					if(!fillTool && mouseButtons & SDL_BUTTON_LMASK && brushStartX > DISPLAY_X && brushStartX < DISPLAY_X + DISPLAY_WIDTH) {
 						// draw brush to the actual canvas
 						canvasSetPixel(x, y, brushColor);
 					}
@@ -281,12 +281,9 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 
 	drawUI(renderer);
 
-	if(saving) {
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xc0);
-		SDL_RenderFillRect(renderer, NULL);
-	}
-
 	drawText(renderer, "dither:", SCREEN_WIDTH-150, 25, 2.0);
+
+	drawText(renderer, "fill:", SCREEN_WIDTH-150, 500, 2.0);
 
 	drawText(renderer, "test string", 0,SCREEN_HEIGHT-32,2.0);
 }

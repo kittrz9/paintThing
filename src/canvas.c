@@ -117,7 +117,7 @@ typedef struct {
 
 #define VEC2_INVALID (vec2){0xffffffff, 0xffffffff}
 
-#define MAX_FFSTACK_SIZE CANVAS_WIDTH*CANVAS_HEIGHT*2
+#define MAX_FFSTACK_SIZE CANVAS_WIDTH*CANVAS_HEIGHT*4
 vec2 ffStack[MAX_FFSTACK_SIZE];
 uint32_t ffStackPointer;
 
@@ -141,11 +141,13 @@ void ffStackPush(vec2 v) {
 
 void floodFill(uint32_t x, uint32_t y, uint32_t brushColor) {
 	uint32_t startColor = canvasGetPixel(x, y);
+	if(startColor == brushColor) { return; }
 	ffStackPointer = 0;
 	ffStackPush((vec2){x,y});
 	while(ffStackPointer != 0) {
 		vec2 n = ffStackPop();
 		if(canvasGetPixel(n.x, n.y) == startColor) {
+			canvasSetPixel(n.x, n.y, brushColor);
 			ffStackPush((vec2){n.x-1, n.y});
 			ffStackPush((vec2){n.x+1, n.y});
 			ffStackPush((vec2){n.x, n.y-1});

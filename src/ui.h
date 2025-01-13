@@ -56,6 +56,20 @@ typedef struct {
 uiButton* createButton(float x, float y, float w, float h, SDL_Texture* texture, uint32_t color, void (*clickCallback)(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons));
 void destroyButton(uiButton* button);
 
+typedef struct {
+	float x;
+	float y;
+
+	float size;
+
+	bool* flag;
+
+	bool allocated;
+} uiCheckbox;
+
+uiCheckbox* createCheckbox(float x, float y, float size, bool* flag);
+void destroyCheckbox(uiCheckbox* checkbox);
+
 void loadFont(SDL_Renderer* renderer);
 void drawText(SDL_Renderer* renderer, char* str, float x, float y, float scale);
 void unloadFont(void);
