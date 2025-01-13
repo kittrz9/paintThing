@@ -11,6 +11,13 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+SDL_FRect canvasDisplayRect = {
+	SCREEN_WIDTH/2 - 200,
+	20,
+	400,
+	300
+};
+
 #define MAX_DIR_SIZE 256
 #define MAX_DIR_ENTRY_LEN 128
 
@@ -234,7 +241,7 @@ void saveModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float mo
 		SDL_RenderFillRect(renderer, &(SDL_FRect){NAME_ENTRY_X+2 + strlen(fileName)*16, NAME_ENTRY_Y, 4, 32});
 	}
 
-	drawCanvas(renderer, SCREEN_WIDTH/2 - 200, 20, 400, 300);
+	drawCanvas(renderer, &canvasDisplayRect, NULL);
 
 	drawUI(renderer);
 	updateUI(e, mousePosX, mousePosY, mouseButtons);

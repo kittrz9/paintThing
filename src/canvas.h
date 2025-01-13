@@ -15,7 +15,7 @@ typedef struct {
 
 void initCanvas(SDL_Renderer* renderer);
 void uninitCanvas(void);
-void drawCanvas(SDL_Renderer* renderer, float x, float y, float w, float h);
+void drawCanvas(SDL_Renderer* renderer, SDL_FRect* dstRect, SDL_FRect* srcRect);
 
 void lockCanvasTexture(void);
 void unlockCanvasTexture(void);

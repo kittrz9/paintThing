@@ -83,14 +83,9 @@ uint32_t canvasGetPixel(uint32_t x, uint32_t y) {
 	return  *(uint32_t*)((uint8_t*)canvasPixels + offset);
 }
 
-void drawCanvas(SDL_Renderer* renderer, float x, float y, float w, float h) {
-	SDL_FRect rect = {
-		.x = x,
-		.y = y,
-		.w = w,
-		.h = h,
-	};
-	SDL_RenderTexture(renderer, canvasTexture, NULL, &rect);
+// maybe I shouldn't swap the src and dest rects order here
+void drawCanvas(SDL_Renderer* renderer, SDL_FRect* dstRect, SDL_FRect* srcRect) {
+	SDL_RenderTexture(renderer, canvasTexture, srcRect, dstRect);
 }
 
 void updateCanvasHistory(void) {

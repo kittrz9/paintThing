@@ -21,6 +21,13 @@ SDL_FRect displayRect = {
 	.h = DISPLAY_HEIGHT,
 };
 
+SDL_FRect canvasSrcRect = {
+	.x = 0,
+	.y = 0,
+	.w = CANVAS_WIDTH,
+	.h = CANVAS_HEIGHT,
+};
+
 uint8_t brushSize = 1;
 uint32_t brushColor = 0x0000ffff;
 
@@ -97,14 +104,51 @@ void paintModeUninit(void) {
 }
 
 void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons) {
+	int16_t brushX = ((mousePosX-DISPLAY_X)*(canvasSrcRect.w/(float)DISPLAY_WIDTH)) + canvasSrcRect.x;
+	int16_t brushY = ((mousePosY-DISPLAY_Y)*(canvasSrcRect.h/(float)DISPLAY_HEIGHT)) + canvasSrcRect.y;
 	switch(e->type) {
 		case SDL_EVENT_QUIT:
 			running = false;
 			break;
 
 		case SDL_EVENT_MOUSE_WHEEL:
-			if((e->wheel.y < 0 && brushSize > 1) || (e->wheel.y > 0 && brushSize < 255)) {
-				brushSize += e->wheel.y;
+			if(SDL_GetModState() & SDL_KMOD_LCTRL) {
+				canvasSrcRect.w -= e->wheel.y*8;
+				canvasSrcRect.h -= e->wheel.y*6;
+
+				// ideally should keep the brush position the same after zooming
+				// just zooming in the middle for now until I figure out how to implement that
+				canvasSrcRect.x += e->wheel.y*4;
+				canvasSrcRect.y += e->wheel.y*3;
+
+				if(canvasSrcRect.w > CANVAS_WIDTH) {
+					canvasSrcRect.w = CANVAS_WIDTH;
+				}
+				if(canvasSrcRect.h > CANVAS_HEIGHT) {
+					canvasSrcRect.h = CANVAS_HEIGHT;
+				}
+				if(canvasSrcRect.w < 4) {
+					canvasSrcRect.w = 4;
+				}
+				if(canvasSrcRect.h < 3) {
+					canvasSrcRect.h = 3;
+				}
+				if(canvasSrcRect.x + canvasSrcRect.w > CANVAS_WIDTH) {
+					canvasSrcRect.x = CANVAS_WIDTH - canvasSrcRect.w;
+				}
+				if(canvasSrcRect.y + canvasSrcRect.h > CANVAS_HEIGHT) {
+					canvasSrcRect.y = CANVAS_HEIGHT - canvasSrcRect.h;
+				}
+				if(canvasSrcRect.x < 0) {
+					canvasSrcRect.x = 0;
+				}
+				if(canvasSrcRect.y < 0) {
+					canvasSrcRect.y = 0;
+				}
+			} else {
+				if((e->wheel.y < 0 && brushSize > 1) || (e->wheel.y > 0 && brushSize < 255)) {
+					brushSize += e->wheel.y;
+				}
 			}
 			break;
 
@@ -118,8 +162,6 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 						destroySlider(sliderG);
 						destroySlider(sliderB);
 					} else {
-						int16_t brushX = ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
-						int16_t brushY = ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
 						brushColor = canvasGetPixel(brushX, brushY);
 					}
 				} else if(e->button.button == SDL_BUTTON_LEFT) {
@@ -135,6 +177,26 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 			brushStartX = 0;
 			break;
 
+		case SDL_EVENT_MOUSE_MOTION:
+			if(mouseButtons & SDL_BUTTON_MMASK) {
+				canvasSrcRect.x -= e->motion.xrel/2;
+				canvasSrcRect.y -= e->motion.yrel/2;
+
+				if(canvasSrcRect.x + canvasSrcRect.w > CANVAS_WIDTH) {
+					canvasSrcRect.x = CANVAS_WIDTH - canvasSrcRect.w;
+				}
+				if(canvasSrcRect.y + canvasSrcRect.h > CANVAS_HEIGHT) {
+					canvasSrcRect.y = CANVAS_HEIGHT - canvasSrcRect.h;
+				}
+				if(canvasSrcRect.x < 0) {
+					canvasSrcRect.x = 0;
+				}
+				if(canvasSrcRect.y < 0) {
+					canvasSrcRect.y = 0;
+				}
+			}
+			break;
+
 		case SDL_EVENT_KEY_DOWN:
 			if(e->key.mod & SDL_KMOD_LCTRL) {
 				switch(e->key.key) {
@@ -145,15 +207,6 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 					case SDLK_S:
 						modeSwitch(&saveMode, renderer);
 						return;
-						/*// would prefer to have the file saving stuff part of the actual ui eventually
-						// would need to implement text drawing and input stuff though
-						userdata = (saveDialogUserdata){
-							.canvas = getCanvas(),
-							.savingFlag = &saving,
-						};
-						saving = true;
-						SDL_ShowSaveFileDialog(saveCanvasCallback, (void*)&userdata, NULL, saveDialogFilters, sizeof(saveDialogFilters)/sizeof(saveDialogFilters[0]), NULL);
-						break;*/
 					default: break;
 				}
 			}
@@ -169,8 +222,6 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 
 	lockCanvasTexture();
 	if(!saving && selectedColor == 0xff) {
-		int16_t brushX = ((mousePosX-DISPLAY_X)*((float)CANVAS_WIDTH/(float)DISPLAY_WIDTH));
-		int16_t brushY = ((mousePosY-DISPLAY_Y)*((float)CANVAS_HEIGHT/(float)DISPLAY_HEIGHT));
 		for(uint16_t y = MAX(0, brushY-brushSize); y < MIN(CANVAS_HEIGHT, brushY+brushSize); ++y) {
 			for(uint16_t x = MAX(0, brushX-brushSize); x < MIN(CANVAS_WIDTH, brushX+brushSize); ++x) {
 				float ditherSize = (ditherSlider->value * 20) + 1;
@@ -200,7 +251,7 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 		.h = 50,
 	};
 
-	drawCanvas(renderer, DISPLAY_X, DISPLAY_Y, DISPLAY_WIDTH, DISPLAY_HEIGHT); 
+	drawCanvas(renderer, &displayRect, &canvasSrcRect); 
 
 	if(selectedColor != 0xff) {
 		SDL_SetRenderDrawColor(renderer,0,0,0,0xc0);
