@@ -28,6 +28,8 @@ uint32_t canvasGetPixel(uint32_t x, uint32_t y);
 void updateCanvasHistory(void);
 void undoCanvas(void);
 
+void floodFill(uint32_t x, uint32_t y, uint32_t brushColor);
+
 canvasData* getCanvas(void);
 
 #endif // CANVAS_H

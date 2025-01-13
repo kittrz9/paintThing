@@ -59,7 +59,7 @@ fi
 if ! [ -f "$XZ_UTILS_DIR/src/liblzma/.libs/liblzma.a" ]; then
 	cd "$ORIGIN_DIR/$XZ_UTILS_DIR" || exit 1
 	if [ $CC = "x86_64-w64-mingw32-gcc" ]; then
-		cp "/usr/share/licenses/mingw-w64-headers/COPYING.MinGW-w64-runtime.txt" "./windows/COPYING.MinGW-w64-runtime.txt"
+		cp "/usr/share/licenses/mingw-w64-headers/COPYING.MinGW-w64-runtime.txt" "./windows/"
 		bash windows/build.bash
 	else
 		./configure

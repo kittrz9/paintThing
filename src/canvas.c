@@ -110,6 +110,50 @@ void undoCanvas(void) {
 	copyCanvas(canvasPixels, canvasHistory[historyIndex]);
 }
 
+typedef struct {
+	uint32_t x;
+	uint32_t y;
+} vec2;
+
+#define VEC2_INVALID (vec2){0xffffffff, 0xffffffff}
+
+#define MAX_FFSTACK_SIZE CANVAS_WIDTH*CANVAS_HEIGHT*2
+vec2 ffStack[MAX_FFSTACK_SIZE];
+uint32_t ffStackPointer;
+
+vec2 ffStackPop(void) {
+	if(ffStackPointer == 0) {
+		return VEC2_INVALID;
+	}
+	--ffStackPointer;
+	return ffStack[ffStackPointer];
+}
+void ffStackPush(vec2 v) {
+	if(ffStackPointer == MAX_FFSTACK_SIZE) {
+		printf("flood fill stack overflow\n");
+		exit(1);
+	}
+	if(v.x > CANVAS_WIDTH || v.y > CANVAS_HEIGHT) { return; }
+	ffStack[ffStackPointer] = v;
+	++ffStackPointer;
+	return;
+}
+
+void floodFill(uint32_t x, uint32_t y, uint32_t brushColor) {
+	uint32_t startColor = canvasGetPixel(x, y);
+	ffStackPointer = 0;
+	ffStackPush((vec2){x,y});
+	while(ffStackPointer != 0) {
+		vec2 n = ffStackPop();
+		if(canvasGetPixel(n.x, n.y) == startColor) {
+			ffStackPush((vec2){n.x-1, n.y});
+			ffStackPush((vec2){n.x+1, n.y});
+			ffStackPush((vec2){n.x, n.y-1});
+			ffStackPush((vec2){n.x, n.y+1});
+		}
+	}
+}
+
 canvasData* getCanvas(void) {
 	return &canvas;
 }

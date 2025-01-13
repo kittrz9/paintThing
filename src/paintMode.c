@@ -61,6 +61,8 @@ bool saving = false;
 
 bool dither = false;
 
+bool fillTool = false;
+
 void paletteButtonCallback(float mousePosX, float mousePosY, SDL_MouseButtonFlags mouseButtons) {
 	uint8_t index = mousePosY/50;
 	if(mouseButtons & SDL_BUTTON_LMASK) {
@@ -166,6 +168,10 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 					}
 				} else if(e->button.button == SDL_BUTTON_LEFT) {
 					brushStartX = e->button.x;
+
+					if(fillTool) {
+						floodFill(brushX, brushY, brushColor);
+					}
 				}
 			}
 			break;
@@ -208,6 +214,13 @@ void paintModeRun(SDL_Renderer* renderer, SDL_Event* e, float mousePosX, float m
 						modeSwitch(&saveMode, renderer);
 						return;
 					default: break;
+				}
+			} else {
+				switch(e->key.key) {
+					case SDLK_F:
+						printf("%i\n",fillTool);
+						fillTool = !fillTool;
+						break;
 				}
 			}
 			break;
