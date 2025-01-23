@@ -1,8 +1,8 @@
 #!/bin/sh
 
-SDL3_LINK="https://github.com/libsdl-org/SDL/releases/download/preview-3.1.6/SDL3-3.1.6.tar.gz"
-SDL3_ARCHIVE="SDL3-3.1.6.tar.gz"
-SDL3_DIR="SDL3-3.1.6"
+SDL3_LINK="https://github.com/libsdl-org/SDL/archive/refs/tags/release-3.2.0.tar.gz"
+SDL3_ARCHIVE="SDL3-3.2.0.tar.gz"
+SDL3_DIR="SDL-release-3.2.0"
 
 XZ_UTILS_LINK="https://github.com/tukaani-project/xz/releases/download/v5.6.3/xz-5.6.3.tar.xz"
 XZ_UTILS_ARCHIVE="xz-5.6.3.tar.xz"
