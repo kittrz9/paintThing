@@ -123,6 +123,7 @@ int dirCmp(const void* a, const void* b) {
 }
 
 SDL_EnumerationResult addDirEntry(void* userdata, const char* dirname, const char* filename) {
+	if(currentDirSize > MAX_DIR_SIZE) { return SDL_ENUM_FAILURE; }
 	strcpy(dirEntries[currentDirSize], filename);
 	++currentDirSize;
 	return SDL_ENUM_CONTINUE;
